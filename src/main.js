@@ -2,7 +2,7 @@ let app, light, object, input;
 
 const getInt = (l, h) => Math.floor(Math.random() * (h - l) + l);
 
-const getColor = (b) => {
+const getColor = b => {
   let l = 10;
 
   switch (b) {
@@ -35,7 +35,7 @@ function init() {
   app.renderer.setClearColor(getColor('bright'));
   app.renderer.shadowMap.enabled = true;
 
-  app.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, .1, 1000);
+  app.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, .1, 1000);
 
   app.scene = new THREE.Scene();
   app.scene.add(app.camera);
@@ -181,19 +181,29 @@ function inter() {
         y: null,
       },
     },
+    isEnabled: false,
   };
+  
+  input.isEnabled = true;
 
   const move = d => {
-    switch (d) {
-      case 'up':
-        new TWEEN.Tween(app.camera.position).to({y: [2.5, 0]}, 750).easing(TWEEN.Easing.Quadratic.Out).start();
-        break;
-      case 'left':
-        new TWEEN.Tween(app.camera.position).to({x: -1.25}, 375).easing(TWEEN.Easing.Quadratic.Out).start();
-        break;
-      case 'right':
-        new TWEEN.Tween(app.camera.position).to({x: 1.25}, 375).easing(TWEEN.Easing.Quadratic.Out).start();
-        break;
+    if (input.isEnabled) {
+      input.isEnabled = false;
+      
+      switch (d) {
+        case 'up':
+          new TWEEN.Tween(app.camera.position).to({y: [2.5, 0]}, 750).easing(TWEEN.Easing.Quadratic.Out)
+            .onComplete(() => input.isEnabled = true).start();
+          break;
+        case 'left':
+          new TWEEN.Tween(app.camera.position).to({x: -1.25}, 375).easing(TWEEN.Easing.Quadratic.Out)
+            .onComplete(() => input.isEnabled = true).start();
+          break;
+        case 'right':
+          new TWEEN.Tween(app.camera.position).to({x: 1.25}, 375).easing(TWEEN.Easing.Quadratic.Out)
+            .onComplete(() => input.isEnabled = true).start();
+          break;
+      }
     }
   };
 
@@ -216,13 +226,13 @@ function inter() {
 
   window.onkeydown = e => {
     switch (e.code) {
-      case 'ArrowUp': 
-        move('up'); 
+      case 'ArrowUp':
+        move('up');
         break;
-      case 'ArrowLeft': 
-        move('left'); 
+      case 'ArrowLeft':
+        move('left');
         break;
-      case 'ArrowRight': 
+      case 'ArrowRight':
         move('right');
         break;
     }
@@ -236,7 +246,7 @@ function anim(t) {
 
   app.time = t / 1000;
 
-  object.mesh.rotation.x = app.time * .25;
+  object.mesh.rotation.x = app.time * .2;
 
   // object.mesh.rotation.y += .05;
   // object.mesh.position.x = Math.sin(app.time * 4) * 2;
