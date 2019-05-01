@@ -93,9 +93,11 @@ function level() {
   });
   object.geometry.faces.forEach(f => {
     if (!getInt(0, 5)) {
-      let g = new THREE.BoxGeometry(.5, 1.25, 1.5);
+      // let g = new THREE.BoxGeometry(.5, 1.25, 1.5);
+      let g = new THREE.PlaneGeometry(1, 1);
+      g.rotateY(90 * Math.PI / 180);
       g.lookAt(f.normal);
-      g.translate(f.normal.x * 10.25, f.normal.y * 10.25, f.normal.z * 10.25);
+      g.translate(f.normal.x * 11, f.normal.y * 11, f.normal.z * 11);
       object.geometry.merge(g);
     }
   });
@@ -104,7 +106,6 @@ function level() {
   });
 
   object.mesh = new THREE.Mesh(object.geometry, object.material);
-  // object.mesh.rotation.x = 25 * Math.PI / 180;
   object.mesh.rotation.set(0, 0, 90 * Math.PI / 180);
   app.scene.add(object.mesh);
 
@@ -279,7 +280,7 @@ function anim(t) {
 
   app.time = t / 1000;
 
-  object.mesh.rotation.x = app.time * .2;
+  object.mesh.rotation.x = app.time * .25;
 
   // if (object.shader) object.shader.uniforms.uTime.value = app.time;
 
