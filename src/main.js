@@ -73,9 +73,9 @@ function level() {
 
   object.material = [
     new THREE.MeshLambertMaterial({
-      side: THREE.DoubleSide,
+      depthWrite: false,
       transparent: true,
-      opacity: .5,
+      opacity: .75,
     }),
     new THREE.MeshLambertMaterial({
       color: getColor('dark'),
@@ -90,14 +90,17 @@ function level() {
 
   object.geometry.faces.forEach((f, i) => {
     f.materialIndex = (i % 2) === 0 ? 1 : 2;
-  });
-  object.geometry.faces.forEach(f => {
+
+    let g = new THREE.SphereGeometry(1, 2, 2);
+    g.lookAt(f.normal);
+    g.translate(f.normal.x * 20, f.normal.y * 20, f.normal.z * 20);
+    object.geometry.merge(g);
+
     if (!getInt(0, 5)) {
-      // let g = new THREE.BoxGeometry(.5, 1.25, 1.5);
-      let g = new THREE.PlaneGeometry(1, 1);
-      g.rotateY(90 * Math.PI / 180);
+      let g = new THREE.PlaneGeometry(2, 1);
+      g.rotateY(270 * Math.PI / 180);
       g.lookAt(f.normal);
-      g.translate(f.normal.x * 11, f.normal.y * 11, f.normal.z * 11);
+      g.translate(f.normal.x * 11.125, f.normal.y * 11.125, f.normal.z * 11.125);
       object.geometry.merge(g);
     }
   });
