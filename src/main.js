@@ -14,7 +14,7 @@ const getColor = b => {
       l *= 2;
   }
 
-  return `hsl(${getInt(0, 361)}, ${getInt(0, 101)}%, ${l}%)`;
+  return `hsl(${getInt(0, 360)}, ${getInt(0, 101)}%, ${l}%)`;
 };
 
 function init() {
@@ -36,6 +36,7 @@ function init() {
   app.renderer.shadowMap.enabled = true;
 
   app.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, .1, 1000);
+  app.camera.position.set(0, 10, 10);
 
   app.scene = new THREE.Scene();
   app.scene.add(app.camera);
@@ -70,17 +71,26 @@ function level() {
     mesh: null,
   };
 
-  object.geometry = new THREE.SphereGeometry(10, 16, 16);
+  object.geometry = new THREE.SphereGeometry(10, 24, 24);
   const cfe = new THREE.Color(getColor('dark')), cfo = new THREE.Color(getColor('bright'));
-  object.geometry.faces.forEach((f, i) => f.color = (i % 2) === 0 ? cfe : cfo);
+  object.geometry.faces.forEach((f, i) => {
+    f.color = (i % 2) === 0 ? cfe : cfo;
+
+    if (!getInt(0, 5)) {
+      let m = new THREE.Mesh(new THREE.SphereGeometry(.25));
+      // m.rotation.copy(f.normal.clone());
+      m.position.copy(f.normal.clone().multiplyScalar(10));
+      app.scene.add(m);
+    }
+  });
 
   object.material = new THREE.MeshLambertMaterial({
     vertexColors: THREE.FaceColors,
   });
 
   object.mesh = new THREE.Mesh(object.geometry, object.material);
-  object.mesh.position.set(app.camera.position.x, app.camera.position.y - 10, app.camera.position.z - 7.5);
-  object.mesh.rotation.set(0, 0, 90 * Math.PI / 180);
+  // object.mesh.position.set(app.camera.position.x, app.camera.position.y, app.camera.position.z);
+  // object.mesh.rotation.set(0, 0, 90 * Math.PI / 180);
   app.scene.add(object.mesh);
 
 
@@ -155,9 +165,7 @@ function post() {
 }
 
 function inter() {
-  window.onorientationchange = () => {
-    location.reload();
-  };
+  window.onorientationchange = () => location.reload();
 
   window.onresize = () => {
     app.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -181,27 +189,37 @@ function inter() {
         y: null,
       },
     },
-    isEnabled: false,
+    isEnabled: null,
   };
-  
+
   input.isEnabled = true;
 
   const move = d => {
     if (input.isEnabled) {
       input.isEnabled = false;
-      
+
       switch (d) {
         case 'up':
-          new TWEEN.Tween(app.camera.position).to({y: [2.5, 0]}, 750).easing(TWEEN.Easing.Quadratic.Out)
-            .onComplete(() => input.isEnabled = true).start();
+            new TWEEN.Tween(app.camera.position).to({y: [12.5, 10]}, 750).easing(TWEEN.Easing.Quadratic.Out)
+              .onComplete(() => input.isEnabled = true).start();
+            new TWEEN.Tween(app.camera.rotation).to({x: [-7.5 * Math.PI / 180, 0]}, 750).easing(TWEEN.Easing.Quadratic.Out)
+              .start();
           break;
         case 'left':
           new TWEEN.Tween(app.camera.position).to({x: -1.25}, 375).easing(TWEEN.Easing.Quadratic.Out)
             .onComplete(() => input.isEnabled = true).start();
+          new TWEEN.Tween(app.camera.rotation).to({z: 7.5 * Math.PI / 180}, 375).easing(TWEEN.Easing.Quadratic.Out)
+            .start();
+            // new TWEEN.Tween(object.mesh.rotation).to({z: object.mesh.rotation.z - .5}, 375)
+            //   .easing(TWEEN.Easing.Quadratic.Out).onComplete(() => input.isEnabled = true).start();
           break;
         case 'right':
           new TWEEN.Tween(app.camera.position).to({x: 1.25}, 375).easing(TWEEN.Easing.Quadratic.Out)
             .onComplete(() => input.isEnabled = true).start();
+          new TWEEN.Tween(app.camera.rotation).to({z: -7.5 * Math.PI / 180}, 375).easing(TWEEN.Easing.Quadratic.Out)
+            .start();
+            // new TWEEN.Tween(object.mesh.rotation).to({z: object.mesh.rotation.z + .5}, 375)
+            //   .easing(TWEEN.Easing.Quadratic.Out).onComplete(() => input.isEnabled = true).start();
           break;
       }
     }
@@ -226,13 +244,13 @@ function inter() {
 
   window.onkeydown = e => {
     switch (e.code) {
-      case 'ArrowUp':
+      case 'ArrowUp': case 'KeyW':
         move('up');
         break;
-      case 'ArrowLeft':
+      case 'ArrowLeft': case 'KeyA':
         move('left');
         break;
-      case 'ArrowRight':
+      case 'ArrowRight': case 'KeyD':
         move('right');
         break;
     }
@@ -246,12 +264,7 @@ function anim(t) {
 
   app.time = t / 1000;
 
-  object.mesh.rotation.x = app.time * .2;
-
-  // object.mesh.rotation.y += .05;
-  // object.mesh.position.x = Math.sin(app.time * 4) * 2;
-  // app.camera.rotation.x = -Math.sin(app.time * 3) / 3;
-  // app.camera.rotation.y = Math.sin(app.time * 3) / 3;
+  // object.mesh.rotation.x = app.time * .2;
 
   // if (object.shader) object.shader.uniforms.uTime.value = app.time;
 
