@@ -36,7 +36,7 @@ function init() {
   app.renderer.shadowMap.enabled = true;
 
   app.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, .1, 1000);
-  app.camera.position.set(0, 10, 10);
+  app.camera.position.set(0, 10, 7.5);
 
   app.scene = new THREE.Scene();
   app.scene.add(app.camera);
@@ -71,16 +71,15 @@ function level() {
     mesh: null,
   };
 
-  object.geometry = new THREE.SphereGeometry(10, 24, 24);
+  object.geometry = new THREE.Geometry();
+  object.geometry.merge(new THREE.SphereGeometry(10, 24, 24));
   const cfe = new THREE.Color(getColor('dark')), cfo = new THREE.Color(getColor('bright'));
-  object.geometry.faces.forEach((f, i) => {
-    f.color = (i % 2) === 0 ? cfe : cfo;
-
+  object.geometry.faces.forEach((f, i) => f.color = (i % 2) === 0 ? cfe : cfo);
+  object.geometry.faces.forEach(f => {
     if (!getInt(0, 5)) {
-      let m = new THREE.Mesh(new THREE.SphereGeometry(.25));
-      // m.rotation.copy(f.normal.clone());
-      m.position.copy(f.normal.clone().multiplyScalar(10));
-      app.scene.add(m);
+      let g = new THREE.SphereGeometry(.5, 2, 2);
+      g.translate(f.normal.x * 11, f.normal.y * 11, f.normal.z * 11);
+      object.geometry.merge(g);
     }
   });
 
@@ -89,8 +88,7 @@ function level() {
   });
 
   object.mesh = new THREE.Mesh(object.geometry, object.material);
-  // object.mesh.position.set(app.camera.position.x, app.camera.position.y, app.camera.position.z);
-  // object.mesh.rotation.set(0, 0, 90 * Math.PI / 180);
+  object.mesh.rotation.set(0, 0, 90 * Math.PI / 180);
   app.scene.add(object.mesh);
 
 
@@ -208,7 +206,7 @@ function inter() {
         case 'left':
           new TWEEN.Tween(app.camera.position).to({x: -1.25}, 375).easing(TWEEN.Easing.Quadratic.Out)
             .onComplete(() => input.isEnabled = true).start();
-          new TWEEN.Tween(app.camera.rotation).to({z: 7.5 * Math.PI / 180}, 375).easing(TWEEN.Easing.Quadratic.Out)
+          new TWEEN.Tween(app.camera.rotation).to({z: 5 * Math.PI / 180}, 375).easing(TWEEN.Easing.Quadratic.Out)
             .start();
             // new TWEEN.Tween(object.mesh.rotation).to({z: object.mesh.rotation.z - .5}, 375)
             //   .easing(TWEEN.Easing.Quadratic.Out).onComplete(() => input.isEnabled = true).start();
@@ -216,7 +214,7 @@ function inter() {
         case 'right':
           new TWEEN.Tween(app.camera.position).to({x: 1.25}, 375).easing(TWEEN.Easing.Quadratic.Out)
             .onComplete(() => input.isEnabled = true).start();
-          new TWEEN.Tween(app.camera.rotation).to({z: -7.5 * Math.PI / 180}, 375).easing(TWEEN.Easing.Quadratic.Out)
+          new TWEEN.Tween(app.camera.rotation).to({z: -5 * Math.PI / 180}, 375).easing(TWEEN.Easing.Quadratic.Out)
             .start();
             // new TWEEN.Tween(object.mesh.rotation).to({z: object.mesh.rotation.z + .5}, 375)
             //   .easing(TWEEN.Easing.Quadratic.Out).onComplete(() => input.isEnabled = true).start();
@@ -264,7 +262,7 @@ function anim(t) {
 
   app.time = t / 1000;
 
-  // object.mesh.rotation.x = app.time * .2;
+  object.mesh.rotation.x = app.time * .25;
 
   // if (object.shader) object.shader.uniforms.uTime.value = app.time;
 

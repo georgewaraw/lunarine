@@ -28,10 +28,10 @@ THREE.Post = function() {
     },
     vertexShader: `
       varying vec2 vUv;
-  
+
       void main() {
         vUv = uv;
-  
+
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.);
       }
     `,
@@ -39,11 +39,11 @@ THREE.Post = function() {
       uniform sampler2D tOld;
       uniform sampler2D tNew;
       uniform float uTime;
-  
+
       varying vec2 vUv;
-  
+
       void main() {
-        vec4 a = max(texture2D(tNew, vUv), texture2D(tOld, vUv) * max(sign(texture2D(tOld, vUv) - .1), .0) * .6);
+        vec4 a = max(texture2D(tNew, vUv), texture2D(tOld, vUv) * max(sign(texture2D(tOld, vUv) - .1), .0) * .75);
         vec4 b = a * .95 + fract(sin(dot(vUv * (sin(uTime) + 10.), vec2(12.9898, 78.233))) * 43758.5453123) * .05;
         vec4 c = vec4(b.r, (b.g + b.b) * .5, (b.g + b.b) * .5, 1.);
         gl_FragColor = c;
