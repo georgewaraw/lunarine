@@ -66,28 +66,45 @@ function level() {
 
 
   object = {
-    geometry: null,
     material: null,
+    geometry: null,
     mesh: null,
   };
 
+  object.material = [
+    new THREE.MeshLambertMaterial({
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: .5,
+    }),
+    new THREE.MeshLambertMaterial({
+      color: getColor('dark'),
+    }),
+    new THREE.MeshLambertMaterial({
+      color: getColor('bright'),
+    }),
+  ];
+
   object.geometry = new THREE.Geometry();
   object.geometry.merge(new THREE.SphereGeometry(10, 24, 24));
-  const cfe = new THREE.Color(getColor('dark')), cfo = new THREE.Color(getColor('bright'));
-  object.geometry.faces.forEach((f, i) => f.color = (i % 2) === 0 ? cfe : cfo);
+
+  object.geometry.faces.forEach((f, i) => {
+    f.materialIndex = (i % 2) === 0 ? 1 : 2;
+  });
   object.geometry.faces.forEach(f => {
     if (!getInt(0, 5)) {
-      let g = new THREE.SphereGeometry(.5, 2, 2);
-      g.translate(f.normal.x * 11, f.normal.y * 11, f.normal.z * 11);
+      let g = new THREE.BoxGeometry(.5, 1.25, 1.5);
+      g.lookAt(f.normal);
+      g.translate(f.normal.x * 10.25, f.normal.y * 10.25, f.normal.z * 10.25);
       object.geometry.merge(g);
     }
   });
-
-  object.material = new THREE.MeshLambertMaterial({
-    vertexColors: THREE.FaceColors,
+  object.geometry.faces.forEach(f => {
+    if (!f.materialIndex) f.materialIndex = 0;
   });
 
   object.mesh = new THREE.Mesh(object.geometry, object.material);
+  // object.mesh.rotation.x = 25 * Math.PI / 180;
   object.mesh.rotation.set(0, 0, 90 * Math.PI / 180);
   app.scene.add(object.mesh);
 
@@ -262,7 +279,7 @@ function anim(t) {
 
   app.time = t / 1000;
 
-  object.mesh.rotation.x = app.time * .25;
+  object.mesh.rotation.x = app.time * .2;
 
   // if (object.shader) object.shader.uniforms.uTime.value = app.time;
 
