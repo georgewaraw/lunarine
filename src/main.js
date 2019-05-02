@@ -67,6 +67,7 @@ function level() {
 
   object = {
     material: null,
+    shader: null,
     geometry: null,
     mesh: null,
   };
@@ -84,6 +85,43 @@ function level() {
       color: getColor('bright'),
     }),
   ];
+  const uniforms = `
+    uniform float uTime;
+    uniform float uMorph;
+    uniform float uDistort;
+  `;
+  const shaderVertex = `
+    vec3 transformed = vec3(position);
+
+    transformed.x += sin((position.x + uTime * .375) * 20.) * .0015 * uMorph;
+    transformed.y += sin((position.y + uTime * .375) * 20.) * .0015 * uMorph;
+    transformed.z += sin((position.z + uTime * .375) * 20.) * .0015 * uMorph;
+
+    if (uDistort > 0.) {
+      transformed.x += fract(sin(dot(position.x + uTime * .00000025, (12.9898, 78.233))) * 43758.5453123) * uDistort;
+      transformed.y += fract(sin(dot(position.x + uTime * .00000025, (12.9898, 78.233))) * 43758.5453123) * uDistort;
+      transformed.z += fract(sin(dot(position.x + uTime * .00000025, (12.9898, 78.233))) * 43758.5453123) * uDistort;
+    }
+  `;
+  object.shader = [];
+  object.material.forEach((f, i) => {
+    object.material[i].onBeforeCompile = s => {
+      object.shader.push(s);
+
+      s.uniforms.uTime = {
+        value: 0,
+      };
+      s.uniforms.uMorph = {
+        value: 10,
+      };
+      s.uniforms.uDistort = {
+        value: 0,
+      };
+
+      s.vertexShader = uniforms + s.vertexShader;
+      s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', shaderVertex);
+    };
+  });
 
   object.geometry = new THREE.Geometry();
   object.geometry.merge(new THREE.SphereGeometry(10, 24, 24));
@@ -91,7 +129,7 @@ function level() {
   object.geometry.faces.forEach((f, i) => {
     f.materialIndex = (i % 2) === 0 ? 1 : 2;
 
-    let g = new THREE.SphereGeometry(1, 2, 2);
+    let g = new THREE.SphereGeometry(.75, 2, 2);
     g.lookAt(f.normal);
     g.translate(f.normal.x * 20, f.normal.y * 20, f.normal.z * 20);
     object.geometry.merge(g);
@@ -100,7 +138,7 @@ function level() {
       let g = new THREE.PlaneGeometry(2, 1);
       g.rotateY(270 * Math.PI / 180);
       g.lookAt(f.normal);
-      g.translate(f.normal.x * 11.125, f.normal.y * 11.125, f.normal.z * 11.125);
+      g.translate(f.normal.x * 11, f.normal.y * 11, f.normal.z * 11);
       object.geometry.merge(g);
     }
   });
@@ -111,69 +149,6 @@ function level() {
   object.mesh = new THREE.Mesh(object.geometry, object.material);
   object.mesh.rotation.set(0, 0, 90 * Math.PI / 180);
   app.scene.add(object.mesh);
-
-
-  // const uniforms = `
-  //   uniform float uTime;
-  //   uniform float uMorph;
-  //   uniform float uDistort;
-  // `;
-  // const shaderVertex = `
-  //   vec3 transformed = vec3(position);
-  //
-  //   transformed.x += sin((position.x + uTime * .375) * 20.) * .0015 * uMorph;
-  //   transformed.y += sin((position.y + uTime * .375) * 20.) * .0015 * uMorph;
-  //   transformed.z += sin((position.z + uTime * .375) * 20.) * .0015 * uMorph;
-  //
-  //   if (uDistort > 0.) {
-  //     transformed.x += fract(sin(dot(position.x + uTime * .00000025, (12.9898, 78.233))) * 43758.5453123) * uDistort;
-  //     transformed.y += fract(sin(dot(position.x + uTime * .00000025, (12.9898, 78.233))) * 43758.5453123) * uDistort;
-  //     transformed.z += fract(sin(dot(position.x + uTime * .00000025, (12.9898, 78.233))) * 43758.5453123) * uDistort;
-  //   }
-  // `;
-  //
-  //
-  // object = {
-  //   geometry: null,
-  //   material: null,
-  //   shader: null,
-  //   mesh: null,
-  // };
-  //
-  // object.geometry = new THREE.BoxBufferGeometry(1, 1, 1);
-  //
-  // object.material = new THREE.MeshPhongMaterial({
-  //   color: getColor('dark'),
-  // });
-  // object.material.onBeforeCompile = (s) => {
-  //   object.shader = s;
-  //
-  //   s.uniforms.uTime = {
-  //     value: 0,
-  //   };
-  //   s.uniforms.uMorph = {
-  //     value: 2,
-  //   };
-  //   s.uniforms.uDistort = {
-  //     value: 0,
-  //   };
-  //
-  //   s.vertexShader = uniforms + s.vertexShader;
-  //   s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', shaderVertex);
-  // };
-  //
-  // object.mesh = new THREE.Mesh(object.geometry, object.material);
-  // object.mesh.position.set(app.camera.position.x, app.camera.position.y, app.camera.position.z - 4);
-  // object.mesh.rotation.set(45 * Math.PI / 180, 45 * Math.PI / 180, 0);
-  // object.mesh.castShadow = true;
-  // app.scene.add(object.mesh);
-  //
-  //
-  // const m = new THREE.Mesh(
-  //   new THREE.PlaneBufferGeometry(20, 20), new THREE.MeshPhongMaterial({color: getColor('bright')}));
-  // app.scene.add(m);
-  // m.position.set(app.camera.position.x, app.camera.position.y, app.camera.position.z - 6);
-  // m.receiveShadow = true;
 }
 
 function post() {
@@ -221,8 +196,8 @@ function inter() {
         case 'up':
             new TWEEN.Tween(app.camera.position).to({y: [12.5, 10]}, 750).easing(TWEEN.Easing.Quadratic.Out)
               .onComplete(() => input.isEnabled = true).start();
-            new TWEEN.Tween(app.camera.rotation).to({x: [-7.5 * Math.PI / 180, 0]}, 750).easing(TWEEN.Easing.Quadratic.Out)
-              .start();
+            new TWEEN.Tween(app.camera.rotation).to({x: [-7.5 * Math.PI / 180, 0]}, 750)
+              .easing(TWEEN.Easing.Quadratic.Out).start();
           break;
         case 'left':
           new TWEEN.Tween(app.camera.position).to({x: -1.25}, 375).easing(TWEEN.Easing.Quadratic.Out)
@@ -284,6 +259,7 @@ function anim(t) {
   app.time = t / 1000;
 
   object.mesh.rotation.x = app.time * .25;
+  object.shader.forEach(s => s.uniforms.uTime.value = app.time);
 
   // if (object.shader) object.shader.uniforms.uTime.value = app.time;
 
