@@ -139,8 +139,10 @@ function level() {
   geometry.tree = new THREE.Geometry();
   geometry.planet.faces.forEach((f, i) => {
     if (!(i % 20)) {
-      let gt = new THREE.PlaneGeometry(2, 1);
-      gt.rotateY(270 * Math.PI / 180);
+      // let gt = new THREE.PlaneGeometry(2, 1);
+      // gt.rotateY(270 * Math.PI / 180);
+      let gt = new THREE.CylinderGeometry(0, .25, 5);
+      gt.rotateX(90 * Math.PI / 180);
       gt.lookAt(f.normal);
       gt.translate(f.normal.x * 10, f.normal.y * 10, f.normal.z * 10);
       geometry.tree.merge(gt);
@@ -152,10 +154,34 @@ function level() {
     depthWrite: false,
     transparent: true,
     opacity: .75,
+    color: getColor('bright'),
   });
+
+  material.tree.onBeforeCompile = s => {
+    shader.tree = s;
+
+    s.uniforms.uTime = {
+      value: 0,
+    };
+    s.uniforms.uMorph = {
+      value: 10,
+    };
+    s.uniforms.uDistort = {
+      value: 0,
+    };
+
+    s.vertexShader = su + s.vertexShader;
+    s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', sv);
+  };
 
   mesh.tree = new THREE.Mesh(geometry.tree, material.tree);
   app.scene.add(mesh.tree);
+
+
+  // const msh = new THREE.Mesh(, material.tree)
+  // msh.position.y = 5
+  // msh.position.z = -20
+  // app.scene.add(msh)
 }
 
 function post() {
@@ -200,44 +226,18 @@ function inter() {
       input.isEnabled = false;
 
       switch (d) {
-        case 'up':
-            // new TWEEN.Tween(app.camera.position).to({y: [12.5, 10]}, 750).easing(TWEEN.Easing.Quadratic.Out)
-            //   .onComplete(() => input.isEnabled = true).start();
-            // new TWEEN.Tween(app.camera.rotation).to({x: [-7.5 * Math.PI / 180, 0]}, 750)
-            //   .easing(TWEEN.Easing.Quadratic.Out).start();
-
+        case 'forward':
           new TWEEN.Tween(mesh.planet.rotation).to({x: mesh.planet.rotation.x + .5}, 250)
             .easing(TWEEN.Easing.Quadratic.Out).onComplete(() => input.isEnabled = true).start();
           new TWEEN.Tween(mesh.tree.rotation).to({x: mesh.tree.rotation.x + .5}, 250)
             .easing(TWEEN.Easing.Quadratic.Out).start();
           break;
-        case 'down':
-          // new TWEEN.Tween(planet.mesh.rotation).to({x: planet.mesh.rotation.x - .5}, 250)
-          //   .easing(TWEEN.Easing.Quadratic.Out).onComplete(() => input.isEnabled = true).start();
-
+        case 'turn':
           new TWEEN.Tween(mesh.planet.rotation).to({z: mesh.planet.rotation.z + 90 * Math.PI / 180}, 250)
             .easing(TWEEN.Easing.Quadratic.Out).onComplete(() => input.isEnabled = true).start();
           new TWEEN.Tween(mesh.tree.rotation).to({z: mesh.tree.rotation.z + 90 * Math.PI / 180}, 250)
             .easing(TWEEN.Easing.Quadratic.Out).start();
           break;
-        // case 'left':
-          // new TWEEN.Tween(app.camera.position).to({x: -1.25}, 375).easing(TWEEN.Easing.Quadratic.Out)
-          //   .onComplete(() => input.isEnabled = true).start();
-          // new TWEEN.Tween(app.camera.rotation).to({z: 5 * Math.PI / 180}, 375).easing(TWEEN.Easing.Quadratic.Out)
-          //   .start();
-
-            // new TWEEN.Tween(planet.mesh.rotation).to({z: planet.mesh.rotation.z - .5}, 250)
-            //   .easing(TWEEN.Easing.Quadratic.Out).onComplete(() => input.isEnabled = true).start();
-          // break;
-        // case 'right':
-          // new TWEEN.Tween(app.camera.position).to({x: 1.25}, 375).easing(TWEEN.Easing.Quadratic.Out)
-          //   .onComplete(() => input.isEnabled = true).start();
-          // new TWEEN.Tween(app.camera.rotation).to({z: -5 * Math.PI / 180}, 375).easing(TWEEN.Easing.Quadratic.Out)
-          //   .start();
-
-            // new TWEEN.Tween(planet.mesh.rotation).to({z: planet.mesh.rotation.z + .5}, 250)
-            //   .easing(TWEEN.Easing.Quadratic.Out).onComplete(() => input.isEnabled = true).start();
-          // break;
       }
     }
   };
@@ -251,10 +251,12 @@ function inter() {
     input.touch.end.x = e.changedTouches[0].clientX / window.innerWidth * 2 - 1;
     input.touch.end.y = e.changedTouches[0].clientY / window.innerHeight * -2 + 1;
 
-    if (input.touch.start.x - input.touch.end.x > .25) move('right');
-    else if (input.touch.start.x - input.touch.end.x < -.25) move('left');
-    if (input.touch.start.y - input.touch.end.y > .25) move('down');
-    else if (input.touch.start.y - input.touch.end.y < -.25) move('up');
+    // if (input.touch.start.x - input.touch.end.x > .25) move('right');
+    // else if (input.touch.start.x - input.touch.end.x < -.25) move('left');
+    if (Math.abs(input.touch.start.x - input.touch.end.x) < .25) {
+      if (input.touch.start.y - input.touch.end.y < .25) move('forward');
+      else if (input.touch.start.y - input.touch.end.y > -.25) move('turn');
+    }
   };
 
   document.getElementsByTagName('canvas')[0].ontouchstart = e => e.preventDefault();
@@ -262,17 +264,17 @@ function inter() {
   window.onkeydown = e => {
     switch (e.code) {
       case 'ArrowUp': case 'KeyW':
-        move('up');
+        move('forward');
         break;
       case 'ArrowDown': case 'KeyS':
-        move('down');
+        move('turn');
         break;
-      case 'ArrowLeft': case 'KeyA':
-        // move('left');
-        break;
-      case 'ArrowRight': case 'KeyD':
-        // move('right');
-        break;
+      // case 'ArrowLeft': case 'KeyA':
+      //   // move('left');
+      //   break;
+      // case 'ArrowRight': case 'KeyD':
+      //   // move('right');
+      //   break;
     }
   };
 }
