@@ -1,4 +1,4 @@
-let app, light, object, input;
+let app, light, geometry, material, shader, mesh, input;
 
 const getInt = (l, h) => Math.floor(Math.random() * (h - l) + l);
 
@@ -53,103 +53,109 @@ function level() {
     point: null,
   };
 
-  let c = getColor('bright');
+  let cl = getColor('bright');
 
-  light.ambient = new THREE.AmbientLight(c, .5);
+  light.ambient = new THREE.AmbientLight(cl, .5);
   app.scene.add(light.ambient);
 
-  light.point = new THREE.PointLight(c, .5, 100);
+  light.point = new THREE.PointLight(cl, .5, 100);
   light.point.position.set(5, 5, 5);
   light.point.castShadow = true;
   light.point.shadow.mapSize = new THREE.Vector2(512, 512);
   app.camera.add(light.point);
 
 
-  object = {
-    material: null,
-    shader: null,
-    geometry: null,
-    mesh: null,
+  geometry = {
+    planet: null,
+    tree: null,
   };
 
-  object.material = [
-    new THREE.MeshLambertMaterial({
-      depthWrite: false,
-      transparent: true,
-      opacity: .75,
-    }),
-    new THREE.MeshLambertMaterial({
-      color: getColor('dark'),
-    }),
-    new THREE.MeshLambertMaterial({
-      color: getColor('bright'),
-    }),
-  ];
-  object.shader = [];
-  object.material.forEach((f, i) => {
-    object.material[i].onBeforeCompile = s => {
-      object.shader.push(s);
+  material = {
+    planet: null,
+    tree: null,
+  };
 
-      s.uniforms.uTime = {
-        value: 0,
-      };
-      s.uniforms.uMorph = {
-        value: 10,
-      };
-      s.uniforms.uDistort = {
-        value: 0,
-      };
+  shader = {
+    planet: null,
+    tree: null,
+  };
 
-      s.vertexShader = `
-        uniform float uTime;
-        uniform float uMorph;
-        uniform float uDistort;
-      ` + s.vertexShader;
-      s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', `
-        vec3 transformed = vec3(position);
+  mesh = {
+    planet: null,
+    tree: null,
+  };
 
-        transformed.x += sin((position.x + uTime * .375) * 20.) * .0015 * uMorph;
-        transformed.y += sin((position.y + uTime * .375) * 20.) * .0015 * uMorph;
-        transformed.z += sin((position.z + uTime * .375) * 20.) * .0015 * uMorph;
 
-        if (uDistort > 0.) {
-          transformed.x +=
-            fract(sin(dot(position.x + uTime * .00000025, (12.9898, 78.233))) * 43758.5453123) * uDistort;
-          transformed.y +=
-            fract(sin(dot(position.x + uTime * .00000025, (12.9898, 78.233))) * 43758.5453123) * uDistort;
-          transformed.z +=
-            fract(sin(dot(position.x + uTime * .00000025, (12.9898, 78.233))) * 43758.5453123) * uDistort;
-        }
-      `);
-    };
+  const su = `
+    uniform float uTime;
+    uniform float uMorph;
+    uniform float uDistort;
+  `;
+  const sv = `
+    vec3 transformed = vec3(position);
+
+    transformed.x += sin((position.x + uTime * .375) * 20.) * .0015 * uMorph;
+    transformed.y += sin((position.y + uTime * .375) * 20.) * .0015 * uMorph;
+    transformed.z += sin((position.z + uTime * .375) * 20.) * .0015 * uMorph;
+
+    if (uDistort > 0.) {
+      transformed.x += fract(sin(dot(position.x + uTime * .00000025, (12.9898, 78.233))) * 43758.5453123) * uDistort;
+      transformed.y += fract(sin(dot(position.x + uTime * .00000025, (12.9898, 78.233))) * 43758.5453123) * uDistort;
+      transformed.z += fract(sin(dot(position.x + uTime * .00000025, (12.9898, 78.233))) * 43758.5453123) * uDistort;
+    }
+  `;
+
+
+  geometry.planet = new THREE.SphereGeometry(10, 24, 24);
+  const cpd = new THREE.Color(getColor('dark'));
+  const cpb = new THREE.Color(getColor('bright'));
+  geometry.planet.faces.forEach((f, i) => f.color = i % 2 ? cpd : cpb);
+
+  material.planet = new THREE.MeshLambertMaterial({
+    vertexColors: THREE.FaceColors,
   });
 
-  object.geometry = new THREE.Geometry();
-  object.geometry.merge(new THREE.SphereGeometry(10, 24, 24));
+  material.planet.onBeforeCompile = s => {
+    shader.planet = s;
 
-  object.geometry.faces.forEach((f, i) => {
-    f.materialIndex = (i % 2) === 0 ? 1 : 2;
+    s.uniforms.uTime = {
+      value: 0,
+    };
+    s.uniforms.uMorph = {
+      value: 10,
+    };
+    s.uniforms.uDistort = {
+      value: 0,
+    };
 
-    let g = new THREE.SphereGeometry(.75, 2, 2);
-    g.lookAt(f.normal);
-    g.translate(f.normal.x * 20, f.normal.y * 20, f.normal.z * 20);
-    object.geometry.merge(g);
+    s.vertexShader = su + s.vertexShader;
+    s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', sv);
+  };
 
-    if (!getInt(0, 10)) {
-      let g = new THREE.PlaneGeometry(2, 1);
-      g.rotateY(270 * Math.PI / 180);
-      g.lookAt(f.normal);
-      g.translate(f.normal.x * 11, f.normal.y * 11, f.normal.z * 11);
-      object.geometry.merge(g);
+  mesh.planet = new THREE.Mesh(geometry.planet, material.planet);
+  app.scene.add(mesh.planet);
+
+
+  geometry.tree = new THREE.Geometry();
+  geometry.planet.faces.forEach((f, i) => {
+    if (!(i % 20)) {
+      let gt = new THREE.PlaneGeometry(2, 1);
+      gt.rotateY(270 * Math.PI / 180);
+      gt.lookAt(f.normal);
+      gt.translate(f.normal.x * 10, f.normal.y * 10, f.normal.z * 10);
+      geometry.tree.merge(gt);
     }
   });
-  object.geometry.faces.forEach(f => {
-    if (!f.materialIndex) f.materialIndex = 0;
+
+  material.tree = new THREE.MeshLambertMaterial({
+    side: THREE.DoubleSide,
+    depthWrite: false,
+    transparent: true,
+    opacity: .75,
   });
 
-  object.mesh = new THREE.Mesh(object.geometry, object.material);
-  object.mesh.rotation.set(0, 0, 90 * Math.PI / 180);
-  app.scene.add(object.mesh);
+  mesh.tree = new THREE.Mesh(geometry.tree, material.tree);
+  app.scene.add(mesh.tree);
 }
 
 function post() {
@@ -199,29 +205,39 @@ function inter() {
             //   .onComplete(() => input.isEnabled = true).start();
             // new TWEEN.Tween(app.camera.rotation).to({x: [-7.5 * Math.PI / 180, 0]}, 750)
             //   .easing(TWEEN.Easing.Quadratic.Out).start();
-            new TWEEN.Tween(object.mesh.rotation).to({x: object.mesh.rotation.x + .5}, 250)
-              .easing(TWEEN.Easing.Quadratic.Out).onComplete(() => input.isEnabled = true).start();
+
+          new TWEEN.Tween(mesh.planet.rotation).to({x: mesh.planet.rotation.x + .5}, 250)
+            .easing(TWEEN.Easing.Quadratic.Out).onComplete(() => input.isEnabled = true).start();
+          new TWEEN.Tween(mesh.tree.rotation).to({x: mesh.tree.rotation.x + .5}, 250)
+            .easing(TWEEN.Easing.Quadratic.Out).start();
           break;
         case 'down':
-          new TWEEN.Tween(object.mesh.rotation).to({x: object.mesh.rotation.x - .5}, 250)
+          // new TWEEN.Tween(planet.mesh.rotation).to({x: planet.mesh.rotation.x - .5}, 250)
+          //   .easing(TWEEN.Easing.Quadratic.Out).onComplete(() => input.isEnabled = true).start();
+
+          new TWEEN.Tween(mesh.planet.rotation).to({z: mesh.planet.rotation.z + 90 * Math.PI / 180}, 250)
             .easing(TWEEN.Easing.Quadratic.Out).onComplete(() => input.isEnabled = true).start();
+          new TWEEN.Tween(mesh.tree.rotation).to({z: mesh.tree.rotation.z + 90 * Math.PI / 180}, 250)
+            .easing(TWEEN.Easing.Quadratic.Out).start();
           break;
-        case 'left':
+        // case 'left':
           // new TWEEN.Tween(app.camera.position).to({x: -1.25}, 375).easing(TWEEN.Easing.Quadratic.Out)
           //   .onComplete(() => input.isEnabled = true).start();
           // new TWEEN.Tween(app.camera.rotation).to({z: 5 * Math.PI / 180}, 375).easing(TWEEN.Easing.Quadratic.Out)
           //   .start();
-            new TWEEN.Tween(object.mesh.rotation).to({z: object.mesh.rotation.z - .5}, 250)
-              .easing(TWEEN.Easing.Quadratic.Out).onComplete(() => input.isEnabled = true).start();
-          break;
-        case 'right':
+
+            // new TWEEN.Tween(planet.mesh.rotation).to({z: planet.mesh.rotation.z - .5}, 250)
+            //   .easing(TWEEN.Easing.Quadratic.Out).onComplete(() => input.isEnabled = true).start();
+          // break;
+        // case 'right':
           // new TWEEN.Tween(app.camera.position).to({x: 1.25}, 375).easing(TWEEN.Easing.Quadratic.Out)
           //   .onComplete(() => input.isEnabled = true).start();
           // new TWEEN.Tween(app.camera.rotation).to({z: -5 * Math.PI / 180}, 375).easing(TWEEN.Easing.Quadratic.Out)
           //   .start();
-            new TWEEN.Tween(object.mesh.rotation).to({z: object.mesh.rotation.z + .5}, 250)
-              .easing(TWEEN.Easing.Quadratic.Out).onComplete(() => input.isEnabled = true).start();
-          break;
+
+            // new TWEEN.Tween(planet.mesh.rotation).to({z: planet.mesh.rotation.z + .5}, 250)
+            //   .easing(TWEEN.Easing.Quadratic.Out).onComplete(() => input.isEnabled = true).start();
+          // break;
       }
     }
   };
@@ -252,10 +268,10 @@ function inter() {
         move('down');
         break;
       case 'ArrowLeft': case 'KeyA':
-        move('left');
+        // move('left');
         break;
       case 'ArrowRight': case 'KeyD':
-        move('right');
+        // move('right');
         break;
     }
   };
@@ -268,8 +284,9 @@ function anim(t) {
 
   app.time = t / 1000;
 
-  // object.mesh.rotation.x = app.time * .25;
-  object.shader.forEach(s => s.uniforms.uTime.value = app.time);
+  Object.keys(shader).forEach(k => {
+    if (shader[k]) shader[k].uniforms.uTime.value = app.time;
+  });
 
   app.pass.shaderMaterial.uniforms.uTime.value = app.time;
   app.composer.render();
