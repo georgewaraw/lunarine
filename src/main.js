@@ -68,21 +68,22 @@ function level() {
   geometry = {
     planet: null,
     tree: null,
+    snow: null,
   };
-
   material = {
     planet: null,
     tree: null,
+    snow: null,
   };
-
   shader = {
     planet: null,
     tree: null,
+    snow: null,
   };
-
   mesh = {
     planet: null,
     tree: null,
+    snow: null,
   };
 
 
@@ -178,10 +179,37 @@ function level() {
   app.scene.add(mesh.tree);
 
 
-  // const msh = new THREE.Mesh(, material.tree)
-  // msh.position.y = 5
-  // msh.position.z = -20
-  // app.scene.add(msh)
+  geometry.snow = new THREE.Geometry();
+  for (let i = 1000; i--;) geometry.snow.vertices.push(new THREE.Vector3(1 * Math.random(), 1 * Math.random(), 1 * Math.random()));
+
+  material.snow = new THREE.PointsMaterial({
+    size : .01,
+    transparent: true,
+    opacity: .25,
+    depthWrite: false,
+    color: getColor('normal'),
+  });
+
+  material.snow.onBeforeCompile = s => {
+    shader.snow = s;
+
+    s.uniforms.uTime = {
+      value: 0,
+    };
+    s.uniforms.uMorph = {
+      value: 10,
+    };
+    s.uniforms.uDistort = {
+      value: 0,
+    };
+
+    s.vertexShader = su + s.vertexShader;
+    s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', sv);
+  };
+
+  mesh.snow = new THREE.Points(geometry.snow, material.snow);
+  mesh.snow.position.set(app.camera.position.x - .5, app.camera.position.y - .5, app.camera.position.z - 1);
+  app.scene.add(mesh.snow);
 }
 
 function post() {
