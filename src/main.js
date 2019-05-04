@@ -134,6 +134,7 @@ function level() {
   };
 
   mesh.planet = new THREE.Mesh(geometry.planet, material.planet);
+  mesh.planet.receiveShadow = true;
   app.scene.add(mesh.planet);
 
 
@@ -176,11 +177,12 @@ function level() {
   };
 
   mesh.tree = new THREE.Mesh(geometry.tree, material.tree);
+  mesh.tree.castShadow = true;
   app.scene.add(mesh.tree);
 
 
   geometry.snow = new THREE.Geometry();
-  for (let i = 1000; i--;) geometry.snow.vertices.push(new THREE.Vector3(1 * Math.random(), 1 * Math.random(), 1 * Math.random()));
+  for (let i = 1000; i--;) geometry.snow.vertices.push(new THREE.Vector3(Math.random(), Math.random(), Math.random()));
 
   material.snow = new THREE.PointsMaterial({
     size : .01,
@@ -255,15 +257,15 @@ function inter() {
 
       switch (d) {
         case 'forward':
-          new TWEEN.Tween(mesh.planet.rotation).to({x: mesh.planet.rotation.x + .5}, 250)
+          new TWEEN.Tween(mesh.planet.rotation).to({x: mesh.planet.rotation.x + .25}, 250)
             .easing(TWEEN.Easing.Quadratic.Out).onComplete(() => input.isEnabled = true).start();
-          new TWEEN.Tween(mesh.tree.rotation).to({x: mesh.tree.rotation.x + .5}, 250)
+          new TWEEN.Tween(mesh.tree.rotation).to({x: mesh.tree.rotation.x + .25}, 250)
             .easing(TWEEN.Easing.Quadratic.Out).start();
           break;
         case 'turn':
-          new TWEEN.Tween(mesh.planet.rotation).to({z: mesh.planet.rotation.z + 90 * Math.PI / 180}, 250)
+          new TWEEN.Tween(mesh.planet.rotation).to({z: mesh.planet.rotation.z + 45 * Math.PI / 180}, 250)
             .easing(TWEEN.Easing.Quadratic.Out).onComplete(() => input.isEnabled = true).start();
-          new TWEEN.Tween(mesh.tree.rotation).to({z: mesh.tree.rotation.z + 90 * Math.PI / 180}, 250)
+          new TWEEN.Tween(mesh.tree.rotation).to({z: mesh.tree.rotation.z + 45 * Math.PI / 180}, 250)
             .easing(TWEEN.Easing.Quadratic.Out).start();
           break;
       }
