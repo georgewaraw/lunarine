@@ -69,21 +69,25 @@ function level() {
     planet: null,
     tree: null,
     snow: null,
+    title: null,
   };
   material = {
     planet: null,
     tree: null,
     snow: null,
+    title: null,
   };
   shader = {
     planet: null,
     tree: null,
     snow: null,
+    title: null,
   };
   mesh = {
     planet: null,
     tree: null,
     snow: null,
+    title: null,
   };
 
 
@@ -113,6 +117,8 @@ function level() {
   geometry.planet.faces.forEach((f, i) => f.color = i % 2 ? cpd : cpb);
 
   material.planet = new THREE.MeshLambertMaterial({
+    transparent: true,
+    opacity: .25,
     vertexColors: THREE.FaceColors,
   });
 
@@ -126,7 +132,7 @@ function level() {
       value: 10,
     };
     s.uniforms.uDistort = {
-      value: 0,
+      value: 1,
     };
 
     s.vertexShader = su + s.vertexShader;
@@ -155,7 +161,7 @@ function level() {
     side: THREE.DoubleSide,
     depthWrite: false,
     transparent: true,
-    opacity: .75,
+    opacity: .25, // .75,
     color: getColor('bright'),
   });
 
@@ -169,7 +175,7 @@ function level() {
       value: 10,
     };
     s.uniforms.uDistort = {
-      value: 0,
+      value: 1,
     };
 
     s.vertexShader = su + s.vertexShader;
@@ -202,7 +208,7 @@ function level() {
       value: 10,
     };
     s.uniforms.uDistort = {
-      value: 0,
+      value: 1,
     };
 
     s.vertexShader = su + s.vertexShader;
@@ -212,6 +218,46 @@ function level() {
   mesh.snow = new THREE.Points(geometry.snow, material.snow);
   mesh.snow.position.set(app.camera.position.x - .5, app.camera.position.y - .5, app.camera.position.z - 1);
   app.scene.add(mesh.snow);
+
+
+  new THREE.FontLoader().load('json/VT323_Regular.json', f => {
+    geometry.title = new THREE.TextGeometry(' waraws \nLUNARINE', {
+      font: f,
+      size: .1,
+      height: .01,
+    });
+
+    const ctd = new THREE.Color(getColor('normal'));
+    const ctb = new THREE.Color(getColor('bright'));
+    geometry.title.faces.forEach((f, i) => f.color = i % 2 ? ctd : ctb);
+    material.title = new THREE.MeshLambertMaterial({
+      transparent: true,
+      opacity: .75,
+      // vertexColors: THREE.FaceColors,
+      color: getColor('dark'),
+    });
+
+    material.title.onBeforeCompile = s => {
+      shader.title = s;
+
+      s.uniforms.uTime = {
+        value: 0,
+      };
+      s.uniforms.uMorph = {
+        value: .75,
+      };
+      s.uniforms.uDistort = {
+        value: .001,
+      };
+
+      s.vertexShader = su + s.vertexShader;
+      s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', sv);
+    };
+
+    mesh.title = new THREE.Mesh(geometry.title, material.title);
+    mesh.title.position.set(app.camera.position.x - .225, app.camera.position.y + .1, app.camera.position.z - 1.25);
+    app.scene.add(mesh.title);
+  });
 }
 
 function post() {
