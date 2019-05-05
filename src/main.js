@@ -309,9 +309,9 @@ function inter() {
             .easing(TWEEN.Easing.Quadratic.Out).start();
           break;
         case 'turn':
-          new TWEEN.Tween(mesh.planet.rotation).to({z: mesh.planet.rotation.z + 45 * Math.PI / 180}, 250)
+          new TWEEN.Tween(mesh.planet.rotation).to({z: mesh.planet.rotation.z + 90 * Math.PI / 180}, 250)
             .easing(TWEEN.Easing.Quadratic.Out).onComplete(() => input.isEnabled = true).start();
-          new TWEEN.Tween(mesh.tree.rotation).to({z: mesh.tree.rotation.z + 45 * Math.PI / 180}, 250)
+          new TWEEN.Tween(mesh.tree.rotation).to({z: mesh.tree.rotation.z + 90 * Math.PI / 180}, 250)
             .easing(TWEEN.Easing.Quadratic.Out).start();
           break;
       }
