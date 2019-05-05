@@ -25,6 +25,7 @@ function init() {
     composer: null,
     pass: null,
     time: null,
+    isEnabled: null,
   };
 
   app.renderer = new THREE.WebGLRenderer({
@@ -161,7 +162,7 @@ function level() {
     side: THREE.DoubleSide,
     depthWrite: false,
     transparent: true,
-    opacity: .25, // .75,
+    opacity: .25,
     color: getColor('bright'),
   });
 
@@ -318,6 +319,17 @@ function inter() {
     }
   };
 
+  const start = () => {
+    app.scene.remove(mesh.title);
+
+    shader.planet.uniforms.uDistort = 0; // .value
+    shader.tree.uniforms.uDistort = 0;
+    shader.snow.uniforms.uDistort = 0;
+
+    material.planet.opacity = .75;
+    material.tree.opacity = .75;
+  };
+
   window.ontouchstart = e => {
     input.touch.start.x = e.changedTouches[0].clientX / window.innerWidth * 2 - 1;
     input.touch.start.y = e.changedTouches[0].clientY / window.innerHeight * -2 + 1;
@@ -333,6 +345,8 @@ function inter() {
       if (input.touch.start.y - input.touch.end.y < .25) move('forward');
       else if (input.touch.start.y - input.touch.end.y > -.25) move('turn');
     }
+
+    if (!app.isEnabled) start();
   };
 
   document.getElementsByTagName('canvas')[0].ontouchstart = e => e.preventDefault();
@@ -352,6 +366,8 @@ function inter() {
       //   // move('right');
       //   break;
     }
+
+    if (!app.isEnabled) start();
   };
 }
 
