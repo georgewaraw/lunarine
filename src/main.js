@@ -268,6 +268,22 @@ function post() {
   app.pass.renderToScreen = true;
 }
 
+let data, analyser;
+function audio() {
+  const listener = new THREE.AudioListener();
+  app.camera.add(listener);
+
+  const sound = new THREE.Audio(listener);
+  const audioLoader = new THREE.AudioLoader();
+  audioLoader.load('mp3/audio.mp3', b => {
+    sound.setBuffer(b);
+    sound.setLoop(true);
+    sound.play();
+  });
+
+  analyser = new THREE.AudioAnalyser(sound, 128);
+}
+
 function inter() {
   window.onorientationchange = () => location.reload();
 
@@ -316,15 +332,21 @@ function inter() {
             .easing(TWEEN.Easing.Quadratic.Out).start();
           break;
       }
+
+      if (!app.isEnabled) start();
     }
   };
 
   const start = () => {
+    app.isEnabled = true;
+
+    audio();
+
     app.scene.remove(mesh.title);
 
-    shader.planet.uniforms.uDistort = 0; // .value
-    shader.tree.uniforms.uDistort = 0;
-    shader.snow.uniforms.uDistort = 0;
+    // shader.planet.uniforms.uDistort.value = 0;
+    // shader.tree.uniforms.uDistort.value = 0;
+    // shader.snow.uniforms.uDistort.value = 0;
 
     material.planet.opacity = .75;
     material.tree.opacity = .75;
@@ -345,8 +367,6 @@ function inter() {
       if (input.touch.start.y - input.touch.end.y < .25) move('forward');
       else if (input.touch.start.y - input.touch.end.y > -.25) move('turn');
     }
-
-    if (!app.isEnabled) start();
   };
 
   document.getElementsByTagName('canvas')[0].ontouchstart = e => e.preventDefault();
@@ -366,8 +386,6 @@ function inter() {
       //   // move('right');
       //   break;
     }
-
-    if (!app.isEnabled) start();
   };
 }
 
@@ -381,6 +399,13 @@ function anim(t) {
   Object.keys(shader).forEach(k => {
     if (shader[k]) shader[k].uniforms.uTime.value = app.time;
   });
+
+  // https://threejs.org/docs/index.html#api/en/audio/AudioAnalyser
+  if (analyser) {
+    shader.planet.uniforms.uDistort.value = analyser.getFrequencyData()[0] / 2000;
+    shader.tree.uniforms.uDistort.value = analyser.getFrequencyData()[0] / 250;
+    shader.snow.uniforms.uDistort.value = analyser.getFrequencyData()[0] / 250;
+  }
 
   app.pass.shaderMaterial.uniforms.uTime.value = app.time;
   app.composer.render();
