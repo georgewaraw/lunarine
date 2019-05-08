@@ -1,6 +1,8 @@
-let app, light, geometry, material, shader, mesh, input;
+let app, light, geometry, material, shader, mesh, input, audio;
 
 const getInt = (l, h) => Math.floor(Math.random() * (h - l) + l);
+
+const map = (n, il, ih, ol, oh) => (n - il) * (oh - ol) / (ih - il) + ol;
 
 const getColor = b => {
   let l = 10;
@@ -268,20 +270,28 @@ function post() {
   app.pass.renderToScreen = true;
 }
 
-let data, analyser;
-function audio() {
-  const listener = new THREE.AudioListener();
-  app.camera.add(listener);
+function sound() {
+  audio = {
+    listener: null,
+    loader: null,
+    sample: null,
+    analyser: null,
+    amplitude: null,
+  };
 
-  const sound = new THREE.Audio(listener);
-  const audioLoader = new THREE.AudioLoader();
-  audioLoader.load('mp3/audio.mp3', b => {
-    sound.setBuffer(b);
-    sound.setLoop(true);
-    sound.play();
+  audio.listener = new THREE.AudioListener();
+  app.camera.add(audio.listener);
+
+  audio.loader = new THREE.AudioLoader();
+
+  audio.sample = new THREE.Audio(audio.listener);
+  audio.loader.load('mp3/audio.mp3', b => {
+    audio.sample.setBuffer(b);
+    audio.sample.setLoop(true);
+    audio.sample.play();
   });
 
-  analyser = new THREE.AudioAnalyser(sound, 128);
+  audio.analyser = new THREE.AudioAnalyser(audio.sample); // ? + ', 32'
 }
 
 function inter() {
@@ -340,14 +350,9 @@ function inter() {
   const start = () => {
     app.isEnabled = true;
 
-    audio();
+    sound();
 
     app.scene.remove(mesh.title);
-
-    // shader.planet.uniforms.uDistort.value = 0;
-    // shader.tree.uniforms.uDistort.value = 0;
-    // shader.snow.uniforms.uDistort.value = 0;
-
     material.planet.opacity = .75;
     material.tree.opacity = .75;
   };
@@ -401,10 +406,12 @@ function anim(t) {
   });
 
   // https://threejs.org/docs/index.html#api/en/audio/AudioAnalyser
-  if (analyser) {
-    shader.planet.uniforms.uDistort.value = analyser.getFrequencyData()[0] / 2000;
-    shader.tree.uniforms.uDistort.value = analyser.getFrequencyData()[0] / 250;
-    shader.snow.uniforms.uDistort.value = analyser.getFrequencyData()[0] / 250;
+  if (app.isEnabled) {
+    audio.amplitude = map(audio.analyser.getFrequencyData()[0], 0, 255, 0, 2);
+    shader.planet.uniforms.uDistort.value = audio.amplitude;
+    shader.tree.uniforms.uDistort.value = audio.amplitude;
+    shader.snow.uniforms.uDistort.value = audio.amplitude;
+    // console.log(map(audio.analyser.data[0], 0, 255, 0, 10))
   }
 
   app.pass.shaderMaterial.uniforms.uTime.value = app.time;
