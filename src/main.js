@@ -1,4 +1,4 @@
-let app, light, geometry, material, shader, mesh, input, audio;
+let app, light, geometry, material, shader, mesh, input, player, audio;
 
 const getInt = (l, h) => Math.floor(Math.random() * (h - l) + l);
 
@@ -315,59 +315,55 @@ function inter() {
         y: null,
       },
     },
-    isEnabled: null,
   };
 
-  input.isEnabled = true;
+  player = {
+    isFacing: null,
+    isMoving: null,
+  };
 
-  const move = d => {
-    if (input.isEnabled) {
-      input.isEnabled = false;
-
-      switch (d) {
-        case 'forward':
-          new TWEEN.Tween(mesh.planet.rotation).to({x: mesh.planet.rotation.x + .25}, 250)
-            .easing(TWEEN.Easing.Quadratic.Out).onComplete(() => input.isEnabled = true).start();
-          new TWEEN.Tween(mesh.tree.rotation).to({x: mesh.tree.rotation.x + .25}, 250)
-            .easing(TWEEN.Easing.Quadratic.Out).start();
-          break;
-        case 'turn':
-          new TWEEN.Tween(mesh.planet.rotation).to({z: mesh.planet.rotation.z + 90 * Math.PI / 180}, 250)
-            .easing(TWEEN.Easing.Quadratic.Out).onComplete(() => input.isEnabled = true).start();
-          new TWEEN.Tween(mesh.tree.rotation).to({z: mesh.tree.rotation.z + 90 * Math.PI / 180}, 250)
-            .easing(TWEEN.Easing.Quadratic.Out).start();
-          break;
-      }
-
-      if (!app.isEnabled) start();
+  const act = a => {
+    switch (a) {
+      case 'move':
+        player.isMoving = true;
+        break;
+      case 'turn':
+        player.isFacing += 90 * Math.PI / 180;
+        break;
     }
-  };
 
-  const start = () => {
-    app.isEnabled = true;
+    if (!app.isEnabled) {
+      app.isEnabled = true;
 
-    sound();
+      sound();
 
-    app.scene.remove(mesh.title);
-    material.planet.opacity = .75;
-    material.tree.opacity = .75;
+      app.scene.remove(mesh.title);
+      material.planet.opacity = .75;
+      material.tree.opacity = .75;
+    }
   };
 
   window.ontouchstart = e => {
     input.touch.start.x = e.changedTouches[0].clientX / window.innerWidth * 2 - 1;
     input.touch.start.y = e.changedTouches[0].clientY / window.innerHeight * -2 + 1;
+
+    act('move');
   };
 
   window.ontouchend = e => {
     input.touch.end.x = e.changedTouches[0].clientX / window.innerWidth * 2 - 1;
     input.touch.end.y = e.changedTouches[0].clientY / window.innerHeight * -2 + 1;
 
-    // if (input.touch.start.x - input.touch.end.x > .25) move('right');
-    // else if (input.touch.start.x - input.touch.end.x < -.25) move('left');
-    if (Math.abs(input.touch.start.x - input.touch.end.x) < .25) {
-      if (input.touch.start.y - input.touch.end.y < .25) move('forward');
-      else if (input.touch.start.y - input.touch.end.y > -.25) move('turn');
-    }
+    player.isMoving = false;
+
+    // // if (input.touch.start.x - input.touch.end.x > .25) ;
+    // // else if (input.touch.start.x - input.touch.end.x < -.25) ;
+    // if (Math.abs(input.touch.start.x - input.touch.end.x) < .25) {
+    //   // if (input.touch.start.y - input.touch.end.y < .25) ;
+    //   if (input.touch.start.y - input.touch.end.y > .25) act('turn');
+    // }
+    if (Math.abs(input.touch.start.x - input.touch.end.x) < .25 &&
+      input.touch.start.y - input.touch.end.y > .25) act('turn');
   };
 
   document.getElementsByTagName('canvas')[0].ontouchstart = e => e.preventDefault();
@@ -375,25 +371,33 @@ function inter() {
   window.onkeydown = e => {
     switch (e.code) {
       case 'ArrowUp': case 'KeyW':
-        move('forward');
+        act('move');
         break;
       case 'ArrowDown': case 'KeyS':
-        move('turn');
+        act('turn');
         break;
-      // case 'ArrowLeft': case 'KeyA':
-      //   // move('left');
-      //   break;
-      // case 'ArrowRight': case 'KeyD':
-      //   // move('right');
-      //   break;
     }
+  };
+
+  window.onkeyup = e => {
+    if (e.code === 'ArrowUp' || e.code === 'KeyW') player.isMoving = false;
   };
 }
 
 function anim(t) {
   requestAnimationFrame(anim);
 
-  TWEEN.update();
+  if (player.isMoving) {
+    mesh.planet.rotation.x += .01;
+    mesh.tree.rotation.x += .01;
+  }
+  if (mesh.planet.rotation.z < player.isFacing) { // ? z => y
+    mesh.planet.rotation.z += .1;
+    mesh.tree.rotation.z += .1;
+  } else {
+    mesh.planet.rotation.z = player.isFacing;
+    mesh.tree.rotation.z = player.isFacing;
+  }
 
   app.time = t / 1000;
 
