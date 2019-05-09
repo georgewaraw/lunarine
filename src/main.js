@@ -224,19 +224,15 @@ function level() {
 
 
   new THREE.FontLoader().load('json/VT323_Regular.json', f => {
-    geometry.title = new THREE.TextGeometry(' waraws \nLUNARINE', {
+    geometry.title = new THREE.TextBufferGeometry(' waraws\nLUNARINE', {
       font: f,
       size: .1,
       height: .01,
     });
 
-    const ctd = new THREE.Color(getColor('normal'));
-    const ctb = new THREE.Color(getColor('bright'));
-    geometry.title.faces.forEach((f, i) => f.color = i % 2 ? ctd : ctb);
     material.title = new THREE.MeshLambertMaterial({
       transparent: true,
       opacity: .75,
-      // vertexColors: THREE.FaceColors,
       color: getColor('dark'),
     });
 
