@@ -391,12 +391,12 @@ function anim(t) {
     mesh.planet.rotation.x += .01;
     mesh.tree.rotation.x += .01;
   }
-  if (mesh.planet.rotation.z < player.isFacing) { // ? z => y
-    mesh.planet.rotation.z += .1;
-    mesh.tree.rotation.z += .1;
+  if (mesh.planet.rotation.y < player.isFacing) {
+    mesh.planet.rotation.y += .1;
+    mesh.tree.rotation.y += .1;
   } else {
-    mesh.planet.rotation.z = player.isFacing;
-    mesh.tree.rotation.z = player.isFacing;
+    mesh.planet.rotation.y = player.isFacing;
+    mesh.tree.rotation.y = player.isFacing;
   }
 
   app.time = t / 1000;
