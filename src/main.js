@@ -71,24 +71,28 @@ function level() {
   geometry = {
     planet: null,
     tree: null,
+    obstacle: null,
     snow: null,
     title: null,
   };
   material = {
     planet: null,
     tree: null,
+    obstacle: null,
     snow: null,
     title: null,
   };
   shader = {
     planet: null,
     tree: null,
+    obstacle: null,
     snow: null,
     title: null,
   };
   mesh = {
     planet: null,
     tree: null,
+    obstacle: null,
     snow: null,
     title: null,
   };
@@ -144,6 +148,7 @@ function level() {
 
   mesh.planet = new THREE.Mesh(geometry.planet, material.planet);
   mesh.planet.receiveShadow = true;
+  mesh.planet.rotation.set(0, 0, 90 * Math.PI / 180);
   app.scene.add(mesh.planet);
 
 
@@ -188,6 +193,37 @@ function level() {
   mesh.tree = new THREE.Mesh(geometry.tree, material.tree);
   mesh.tree.castShadow = true;
   app.scene.add(mesh.tree);
+
+
+  geometry.obstacle = new THREE.CylinderBufferGeometry(0, .25, 1);
+
+  material.obstacle = new THREE.MeshLambertMaterial({
+    transparent: true,
+    opacity: .5,
+    color: getColor('bright'),
+  });
+
+  material.obstacle.onBeforeCompile = s => {
+    shader.obstacle = s;
+
+    s.uniforms.uTime = {
+      value: 0,
+    };
+    s.uniforms.uMorph = {
+      value: 30,
+    };
+    s.uniforms.uDistort = {
+      value: 0,
+    };
+
+    s.vertexShader = su + s.vertexShader;
+    s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', sv);
+  };
+
+  mesh.obstacle = new THREE.Mesh(geometry.obstacle, material.obstacle);
+  mesh.obstacle.position.set(app.camera.position.x - .5, app.camera.position.y + 1, app.camera.position.z - 20);
+  mesh.obstacle.rotation.set(90 * Math.PI / 180, 0, 0);
+  app.scene.add(mesh.obstacle);
 
 
   geometry.snow = new THREE.Geometry();
@@ -387,6 +423,18 @@ function inter() {
 function anim(t) {
   requestAnimationFrame(anim);
 
+  if (app.isEnabled) {
+    mesh.planet.rotation.x += .0075;
+    mesh.tree.rotation.x += .0075;
+
+    mesh.obstacle.position.y -= .0025;
+    mesh.obstacle.position.z += .075;
+    if (mesh.obstacle.position.z > app.camera.position.z) {
+      mesh.obstacle.position.y = app.camera.position.y + 1;
+      mesh.obstacle.position.z = app.camera.position.z - 20;
+    }
+  }
+
   if (player.isMoving) {
     mesh.planet.rotation.x += .01;
     mesh.tree.rotation.x += .01;
@@ -401,15 +449,18 @@ function anim(t) {
 
   app.time = t / 1000;
 
+  // mesh.snow.rotation.x = Math.sin(app.time) / 2;
+
   Object.keys(shader).forEach(k => {
     if (shader[k]) shader[k].uniforms.uTime.value = app.time;
   });
 
   // https://threejs.org/docs/index.html#api/en/audio/AudioAnalyser
   if (app.isEnabled) {
-    audio.amplitude = map(audio.analyser.getFrequencyData()[0], 0, 255, 0, 2);
+    audio.amplitude = map(audio.analyser.getFrequencyData()[0], 0, 255, .1, 2);
     shader.planet.uniforms.uDistort.value = audio.amplitude;
     shader.tree.uniforms.uDistort.value = audio.amplitude;
+    shader.obstacle.uniforms.uDistort.value = audio.amplitude;
     shader.snow.uniforms.uDistort.value = audio.amplitude;
     // console.log(map(audio.analyser.data[0], 0, 255, 0, 10))
   }
