@@ -35,13 +35,15 @@ function init() {
   });
   app.renderer.setPixelRatio(.2);
   app.renderer.setSize(window.innerWidth, window.innerHeight);
-  app.renderer.setClearColor(getColor('bright'));
+  const cc = getColor('bright');
+  app.renderer.setClearColor(cc);
   app.renderer.shadowMap.enabled = true;
 
   app.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, .1, 1000);
   app.camera.position.set(0, 10, 7.5);
 
   app.scene = new THREE.Scene();
+  app.scene.fog = new THREE.FogExp2(cc, .075);
   app.scene.add(app.camera);
 
   level();
@@ -221,9 +223,9 @@ function level() {
   };
 
   mesh.obstacle = new THREE.Mesh(geometry.obstacle, material.obstacle);
-  mesh.obstacle.position.set(app.camera.position.x - .5, app.camera.position.y + 1, app.camera.position.z - 20);
+  mesh.obstacle.castShadow = true;
+  mesh.obstacle.position.set(app.camera.position.x - .5, app.camera.position.y + .75, app.camera.position.z - 30);
   mesh.obstacle.rotation.set(90 * Math.PI / 180, 0, 0);
-  app.scene.add(mesh.obstacle);
 
 
   geometry.snow = new THREE.Geometry();
@@ -376,6 +378,7 @@ function inter() {
       app.scene.remove(mesh.title);
       material.planet.opacity = .75;
       material.tree.opacity = .75;
+      app.scene.add(mesh.obstacle);
     }
   };
 
@@ -423,15 +426,18 @@ function inter() {
 function anim(t) {
   requestAnimationFrame(anim);
 
+  app.time = t / 1000;
+
   if (app.isEnabled) {
     mesh.planet.rotation.x += .0075;
     mesh.tree.rotation.x += .0075;
 
-    mesh.obstacle.position.y -= .0025;
+    mesh.obstacle.position.x = Math.cos(app.time * 1.75);
+    mesh.obstacle.position.y = app.camera.position.y + .75 + Math.sin(app.time * 1.5) / 2// -= .0025;
     mesh.obstacle.position.z += .075;
     if (mesh.obstacle.position.z > app.camera.position.z) {
-      mesh.obstacle.position.y = app.camera.position.y + 1;
-      mesh.obstacle.position.z = app.camera.position.z - 20;
+      // mesh.obstacle.position.y = app.camera.position.y + 1;
+      mesh.obstacle.position.z = app.camera.position.z - 30;
     }
   }
 
@@ -447,8 +453,6 @@ function anim(t) {
     mesh.tree.rotation.y = player.isFacing;
   }
 
-  app.time = t / 1000;
-
   // mesh.snow.rotation.x = Math.sin(app.time) / 2;
 
   Object.keys(shader).forEach(k => {
@@ -460,7 +464,7 @@ function anim(t) {
     audio.amplitude = map(audio.analyser.getFrequencyData()[0], 0, 255, .1, 2);
     shader.planet.uniforms.uDistort.value = audio.amplitude;
     shader.tree.uniforms.uDistort.value = audio.amplitude;
-    shader.obstacle.uniforms.uDistort.value = audio.amplitude;
+    if (shader.obstacle) shader.obstacle.uniforms.uDistort.value = audio.amplitude;
     shader.snow.uniforms.uDistort.value = audio.amplitude;
     // console.log(map(audio.analyser.data[0], 0, 255, 0, 10))
   }
