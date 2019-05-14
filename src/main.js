@@ -1,4 +1,4 @@
-let app, light, geometry, material, shader, mesh, input, player, audio;
+let app, light, geometry, material, shader, mesh, input, audio;
 
 const getInt = (l, h) => Math.floor(Math.random() * (h - l) + l);
 
@@ -134,15 +134,9 @@ function level() {
   material.planet.onBeforeCompile = s => {
     shader.planet = s;
 
-    s.uniforms.uTime = {
-      value: 0,
-    };
-    s.uniforms.uMorph = {
-      value: 10,
-    };
-    s.uniforms.uDistort = {
-      value: 1,
-    };
+    s.uniforms.uTime = {value: 0};
+    s.uniforms.uMorph = {value: 10};
+    s.uniforms.uDistort = {value: 1};
 
     s.vertexShader = su + s.vertexShader;
     s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', sv);
@@ -178,15 +172,9 @@ function level() {
   material.tree.onBeforeCompile = s => {
     shader.tree = s;
 
-    s.uniforms.uTime = {
-      value: 0,
-    };
-    s.uniforms.uMorph = {
-      value: 10,
-    };
-    s.uniforms.uDistort = {
-      value: 1,
-    };
+    s.uniforms.uTime = {value: 0};
+    s.uniforms.uMorph = {value: 10};
+    s.uniforms.uDistort = {value: 1};
 
     s.vertexShader = su + s.vertexShader;
     s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', sv);
@@ -201,22 +189,16 @@ function level() {
 
   material.obstacle = new THREE.MeshLambertMaterial({
     transparent: true,
-    opacity: .5,
+    opacity: .75,
     color: getColor('bright'),
   });
 
   material.obstacle.onBeforeCompile = s => {
     shader.obstacle = s;
 
-    s.uniforms.uTime = {
-      value: 0,
-    };
-    s.uniforms.uMorph = {
-      value: 30,
-    };
-    s.uniforms.uDistort = {
-      value: 0,
-    };
+    s.uniforms.uTime = {value: 0};
+    s.uniforms.uMorph = {value: 30};
+    s.uniforms.uDistort = {value: 0};
 
     s.vertexShader = su + s.vertexShader;
     s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', sv);
@@ -242,22 +224,15 @@ function level() {
   material.snow.onBeforeCompile = s => {
     shader.snow = s;
 
-    s.uniforms.uTime = {
-      value: 0,
-    };
-    s.uniforms.uMorph = {
-      value: 10,
-    };
-    s.uniforms.uDistort = {
-      value: 1,
-    };
+    s.uniforms.uTime = {value: 0};
+    s.uniforms.uMorph = {value: 10};
+    s.uniforms.uDistort = {value: 1};
 
     s.vertexShader = su + s.vertexShader;
     s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', sv);
   };
 
   mesh.snow = new THREE.Points(geometry.snow, material.snow);
-  mesh.snow.position.set(app.camera.position.x - .5, app.camera.position.y - .5, app.camera.position.z - 1);
   app.scene.add(mesh.snow);
 
 
@@ -277,15 +252,9 @@ function level() {
     material.title.onBeforeCompile = s => {
       shader.title = s;
 
-      s.uniforms.uTime = {
-        value: 0,
-      };
-      s.uniforms.uMorph = {
-        value: .75,
-      };
-      s.uniforms.uDistort = {
-        value: .001,
-      };
+      s.uniforms.uTime = {value: 0};
+      s.uniforms.uMorph = {value: .75};
+      s.uniforms.uDistort = {value: .001};
 
       s.vertexShader = su + s.vertexShader;
       s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', sv);
@@ -353,32 +322,45 @@ function inter() {
         y: null,
       },
     },
+    isEnabled = null,
   };
 
-  player = {
-    isFacing: null,
-    isMoving: null,
+  input.isEnabled = true;
+
+  const start = () => {
+    app.isEnabled = true;
+
+    sound();
+
+    app.scene.remove(mesh.title);
+    material.planet.opacity = .75;
+    material.tree.opacity = .75;
+    app.scene.add(mesh.obstacle);
   };
+
+  const tj = new TWEEN.Tween(app.camera.position).to({y: 12.5}, 175).onComplete(() =>
+    new TWEEN.Tween(app.camera.position).to({y: 10}, 200).easing(TWEEN.Easing.Quadratic.Out).onComplete(() =>
+      input.isEnabled = true).start());
+  const tsl = new TWEEN.Tween(app.camera.position).to({x: -1.25}, 250).easing(TWEEN.Easing.Quadratic.Out)
+    .onComplete(() => input.isEnabled = true);
+  const tsr = new TWEEN.Tween(app.camera.position).to({x: 1.25}, 250).easing(TWEEN.Easing.Quadratic.Out)
+    .onComplete(() => input.isEnabled = true);
 
   const act = a => {
-    switch (a) {
-      case 'move':
-        player.isMoving = true;
-        break;
-      case 'turn':
-        player.isFacing += 90 * Math.PI / 180;
-        break;
-    }
+    if (app.isEnabled && input.isEnabled) {
+      input.isEnabled = false;
 
-    if (!app.isEnabled) {
-      app.isEnabled = true;
-
-      sound();
-
-      app.scene.remove(mesh.title);
-      material.planet.opacity = .75;
-      material.tree.opacity = .75;
-      app.scene.add(mesh.obstacle);
+      switch (a) {
+        case 'jump':
+          tj.start();
+          break;
+        case 'strafeLeft':
+          tsl.start();
+          break;
+        case 'strafeRight':
+          tsr.start();
+          break;
+      }
     }
   };
 
@@ -386,23 +368,19 @@ function inter() {
     input.touch.start.x = e.changedTouches[0].clientX / window.innerWidth * 2 - 1;
     input.touch.start.y = e.changedTouches[0].clientY / window.innerHeight * -2 + 1;
 
-    act('move');
+    if (!app.isEnabled) start();
   };
 
   window.ontouchend = e => {
     input.touch.end.x = e.changedTouches[0].clientX / window.innerWidth * 2 - 1;
     input.touch.end.y = e.changedTouches[0].clientY / window.innerHeight * -2 + 1;
 
-    player.isMoving = false;
-
-    // // if (input.touch.start.x - input.touch.end.x > .25) ;
-    // // else if (input.touch.start.x - input.touch.end.x < -.25) ;
-    // if (Math.abs(input.touch.start.x - input.touch.end.x) < .25) {
-    //   // if (input.touch.start.y - input.touch.end.y < .25) ;
-    //   if (input.touch.start.y - input.touch.end.y > .25) act('turn');
-    // }
     if (Math.abs(input.touch.start.x - input.touch.end.x) < .25 &&
-      input.touch.start.y - input.touch.end.y > .25) act('turn');
+      input.touch.start.y - input.touch.end.y < -.25) act('jump');
+    else if (Math.abs(input.touch.start.y - input.touch.end.y) < .25 &&
+      input.touch.start.x - input.touch.end.x < -.25) act('strafeLeft');
+    else if (Math.abs(input.touch.start.y - input.touch.end.y) < .25 &&
+      input.touch.start.x - input.touch.end.x > .25) act('strafeRight');
   };
 
   document.getElementsByTagName('canvas')[0].ontouchstart = e => e.preventDefault();
@@ -410,23 +388,28 @@ function inter() {
   window.onkeydown = e => {
     switch (e.code) {
       case 'ArrowUp': case 'KeyW':
-        act('move');
+        act('jump');
         break;
-      case 'ArrowDown': case 'KeyS':
-        act('turn');
+      case 'ArrowLeft': case 'KeyA':
+        act('strafeLeft');
+        break;
+      case 'ArrowRight': case 'KeyD':
+        act('strafeRight');
         break;
     }
-  };
 
-  window.onkeyup = e => {
-    if (e.code === 'ArrowUp' || e.code === 'KeyW') player.isMoving = false;
+    if (!app.isEnabled) start();
   };
 }
 
 function anim(t) {
   requestAnimationFrame(anim);
 
+  TWEEN.update();
+
   app.time = t / 1000;
+
+  mesh.snow.position.set(app.camera.position.x - .5, app.camera.position.y - .5, app.camera.position.z - 1);
 
   if (app.isEnabled) {
     mesh.planet.rotation.x += .0075;
@@ -439,18 +422,6 @@ function anim(t) {
       // mesh.obstacle.position.y = app.camera.position.y + 1;
       mesh.obstacle.position.z = app.camera.position.z - 30;
     }
-  }
-
-  if (player.isMoving) {
-    mesh.planet.rotation.x += .01;
-    mesh.tree.rotation.x += .01;
-  }
-  if (mesh.planet.rotation.y < player.isFacing) {
-    mesh.planet.rotation.y += .1;
-    mesh.tree.rotation.y += .1;
-  } else {
-    mesh.planet.rotation.y = player.isFacing;
-    mesh.tree.rotation.y = player.isFacing;
   }
 
   // mesh.snow.rotation.x = Math.sin(app.time) / 2;
