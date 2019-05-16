@@ -382,6 +382,7 @@ function inter() {
     .onComplete(() => {
       player.isShooting = false
       mesh.bullet.position.z = 7.5
+      // app.renderer.setPixelRatio(.2)
     })
 
   const act = a => {
@@ -409,6 +410,7 @@ function inter() {
           if (!player.isShooting) {
             player.isShooting = true
             ts.start()
+            app.renderer.setPixelRatio(.2)
           }
           break
       }
@@ -482,7 +484,10 @@ function anim(t) {
     shader.snow.uniforms.uDistort.value = audio.amplitude
     // console.log(map(audio.analyser.data[0], 0, 255, 0, 10))
 
-    if (map(audio.analyser.data[0], 0, 255, 0, 10) > 1 && app.camera.position.y === 10) console.log('hit bottom')
+    if (map(audio.analyser.data[0], 0, 255, 0, 10) > 1 && app.camera.position.y === 10) {
+      console.log('hit bottom')
+      app.renderer.setPixelRatio(.05)
+    }
 
     mesh.planet.rotation.x += .0075
     mesh.tree.rotation.x += .0075
@@ -496,8 +501,14 @@ function anim(t) {
       // mesh.obstacle.position.y = app.camera.position.y + 1
       mesh.obstacle.position.z = app.camera.position.z - 30
 
-      if (app.camera.position.x < 0 && mesh.obstacle.position.x < 0) console.log('hit left')
-      else if (app.camera.position.x > 0 && mesh.obstacle.position.x > 0) console.log('hit right')
+      if (app.camera.position.x < 0 && mesh.obstacle.position.x < 0) {
+        console.log('hit left')
+        app.renderer.setPixelRatio(.05)
+      }
+      else if (app.camera.position.x > 0 && mesh.obstacle.position.x > 0) {
+        console.log('hit right')
+        app.renderer.setPixelRatio(.05)
+      }
     }
     
     mesh.bullet.position.x = app.camera.position.x - .5 + Math.cos(app.time * 1.75)

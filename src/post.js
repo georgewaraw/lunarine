@@ -1,30 +1,23 @@
 THREE.Post = function() {
-
-  THREE.Pass.call(this);
+  THREE.Pass.call(this)
 
   this.textureComp = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {
     minFilter: THREE.LinearFilter,
     magFilter: THREE.NearestFilter,
-    format: THREE.RGBAFormat
-  });
+    format: THREE.RGBAFormat,
+  })
 
   this.textureOld = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {
     minFilter: THREE.LinearFilter,
     magFilter: THREE.NearestFilter,
-    format: THREE.RGBAFormat
-  });
+    format: THREE.RGBAFormat,
+  })
 
   this.shaderMaterial = new THREE.ShaderMaterial({
     uniforms: {
-      tOld: {
-        value: null,
-      },
-      tNew: {
-        value: null,
-      },
-      uTime: {
-        value: 0,
-      },
+      tOld: {value: null},
+      tNew: {value: null},
+      uTime: {value: 0},
     },
     vertexShader: `
       varying vec2 vUv;
@@ -49,43 +42,39 @@ THREE.Post = function() {
         gl_FragColor = c;
       }
     `,
-  });
+  })
 
-  this.compFsQuad = new THREE.Pass.FullScreenQuad(this.shaderMaterial);
-
-  var material = new THREE.MeshBasicMaterial();
-  this.copyFsQuad = new THREE.Pass.FullScreenQuad(material);
-
-};
+  this.compFsQuad = new THREE.Pass.FullScreenQuad(this.shaderMaterial)
+  this.copyFsQuad = new THREE.Pass.FullScreenQuad(new THREE.MeshBasicMaterial())
+}
 
 THREE.Post.prototype = Object.assign(Object.create(THREE.Pass.prototype), {
   constructor: THREE.Post,
   render: function(renderer, writeBuffer, readBuffer) {
-    this.shaderMaterial.uniforms.tOld.value = this.textureOld.texture;
-    this.shaderMaterial.uniforms.tNew.value = readBuffer.texture;
+    this.shaderMaterial.uniforms.tOld.value = this.textureOld.texture
+    this.shaderMaterial.uniforms.tNew.value = readBuffer.texture
 
-    renderer.setRenderTarget(this.textureComp);
-    this.compFsQuad.render(renderer);
-
-    this.copyFsQuad.material.map = this.textureComp.texture;
+    renderer.setRenderTarget(this.textureComp)
+    this.compFsQuad.render(renderer)
+    this.copyFsQuad.material.map = this.textureComp.texture
 
     if (this.renderToScreen) {
-      renderer.setRenderTarget(null);
-      this.copyFsQuad.render(renderer);
+      renderer.setRenderTarget(null)
+      this.copyFsQuad.render(renderer)
     } else {
-      renderer.setRenderTarget(writeBuffer);
+      renderer.setRenderTarget(writeBuffer)
 
-      if (this.clear) renderer.clear();
+      if (this.clear) renderer.clear()
 
-      this.copyFsQuad.render(renderer);
+      this.copyFsQuad.render(renderer)
     }
 
-    var temp = this.textureOld;
-    this.textureOld = this.textureComp;
-    this.textureComp = temp;
+    const t = this.textureOld
+    this.textureOld = this.textureComp
+    this.textureComp = t
   },
   setSize: function(width, height) {
-    this.textureComp.setSize(width, height);
-    this.textureOld.setSize(width, height);
+    this.textureComp.setSize(width, height)
+    this.textureOld.setSize(width, height)
   }
-});
+})
