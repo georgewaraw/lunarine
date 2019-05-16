@@ -1,4 +1,4 @@
-let app, light, geometry, material, shader, mesh, input, audio
+let app, light, geometry, material, shader, mesh, input, player, audio
 
 const getInt = (l, h) => Math.floor(Math.random() * (h - l) + l)
 
@@ -74,6 +74,7 @@ function level() {
     planet: null,
     tree: null,
     obstacle: null,
+    bullet: null,
     snow: null,
     title: null,
   }
@@ -81,6 +82,7 @@ function level() {
     planet: null,
     tree: null,
     obstacle: null,
+    bullet: null,
     snow: null,
     title: null,
   }
@@ -88,6 +90,7 @@ function level() {
     planet: null,
     tree: null,
     obstacle: null,
+    bullet: null,
     snow: null,
     title: null,
   }
@@ -95,6 +98,7 @@ function level() {
     planet: null,
     tree: null,
     obstacle: null,
+    bullet: null,
     snow: null,
     title: null,
   }
@@ -208,6 +212,32 @@ function level() {
   mesh.obstacle.castShadow = true
   mesh.obstacle.position.set(app.camera.position.x - .5, app.camera.position.y + .75, app.camera.position.z - 30)
   mesh.obstacle.rotation.set(90 * Math.PI / 180, 0, 0)
+  
+  
+  geometry.bullet = new THREE.CylinderBufferGeometry(0, .25, 1)
+
+  material.bullet = new THREE.MeshLambertMaterial({
+    transparent: true,
+    opacity: .75,
+    color: getColor('bright'),
+  })
+
+  material.bullet.onBeforeCompile = s => {
+    shader.bullet = s
+
+    s.uniforms.uTime = {value: 0}
+    s.uniforms.uMorph = {value: 30}
+    s.uniforms.uDistort = {value: 0}
+
+    s.vertexShader = su + s.vertexShader
+    s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', sv)
+  }
+
+  mesh.bullet = new THREE.Mesh(geometry.obstacle, material.obstacle)
+  mesh.bullet.castShadow = true
+  mesh.bullet.position.set(app.camera.position.x - .5, app.camera.position.y + .75, 7.5)
+  mesh.bullet.rotation.set(270 * Math.PI / 180, 0, 0)
+  app.scene.add(mesh.bullet)
 
 
   geometry.snow = new THREE.Geometry()
@@ -322,10 +352,13 @@ function inter() {
         y: null,
       },
     },
-    isEnabled: null,
   }
 
-  input.isEnabled = true
+  player = {
+    isJumping: null,
+    isStrafing: null,
+    isShooting: null,
+  }
 
   const start = () => {
     app.isEnabled = true
@@ -340,25 +373,43 @@ function inter() {
 
   const tj = new TWEEN.Tween(app.camera.position).to({y: 12.5}, 175).onComplete(() =>
     new TWEEN.Tween(app.camera.position).to({y: 10}, 2000).easing(TWEEN.Easing.Quadratic.Out).onComplete(() =>
-      input.isEnabled = true).start())
+      player.isJumping = false).start())
   const tsl = new TWEEN.Tween(app.camera.position).to({x: -1.25}, 250).easing(TWEEN.Easing.Quadratic.Out)
-    .onComplete(() => input.isEnabled = true)
+    .onComplete(() => player.isStrafing = false)
   const tsr = new TWEEN.Tween(app.camera.position).to({x: 1.25}, 250).easing(TWEEN.Easing.Quadratic.Out)
-    .onComplete(() => input.isEnabled = true)
+    .onComplete(() => player.isStrafing = false)
+  const ts = new TWEEN.Tween(mesh.bullet.position).to({z: -20}, 5000).easing(TWEEN.Easing.Quadratic.Out)
+    .onComplete(() => {
+      player.isShooting = false
+      mesh.bullet.position.z = 7.5
+    })
 
   const act = a => {
-    if (app.isEnabled && input.isEnabled) {
-      input.isEnabled = false
-
+    if (app.isEnabled) {
       switch (a) {
         case 'jump':
-          tj.start()
+          if (!player.isJumping) {
+            player.isJumping = true
+            tj.start()
+          }
           break
         case 'strafeLeft':
-          tsl.start()
+          if (!player.isStrafing && app.camera.position.x >= 0) {
+            player.isStrafing = true
+            tsl.start()
+          }
           break
         case 'strafeRight':
-          tsr.start()
+          if (!player.isStrafing && app.camera.position.x <= 0) {
+            player.isStrafing = true
+            tsr.start()
+          }
+          break
+        case 'shoot':
+          if (!player.isShooting) {
+            player.isShooting = true
+            ts.start()
+          }
           break
       }
     }
@@ -377,6 +428,8 @@ function inter() {
 
     if (Math.abs(input.touch.start.x - input.touch.end.x) < .25 &&
       input.touch.start.y - input.touch.end.y < -.25) act('jump')
+    else if (Math.abs(input.touch.start.x - input.touch.end.x) < .25 &&
+      input.touch.start.y - input.touch.end.y > .25) act('shoot')
     else if (Math.abs(input.touch.start.y - input.touch.end.y) < .25 &&
       input.touch.start.x - input.touch.end.x < -.25) act('strafeLeft')
     else if (Math.abs(input.touch.start.y - input.touch.end.y) < .25 &&
@@ -395,6 +448,9 @@ function inter() {
         break
       case 'ArrowRight': case 'KeyD':
         act('strafeRight')
+        break
+      case 'ArrowDown': case 'KeyS':
+        act('shoot')
         break
       case 'KeyQ':
         new TWEEN.Tween(app.camera.rotation).to({y: [30 * Math.PI / 180, 0]}, 500).start()
@@ -443,6 +499,9 @@ function anim(t) {
       if (app.camera.position.x < 0 && mesh.obstacle.position.x < 0) console.log('hit left')
       else if (app.camera.position.x > 0 && mesh.obstacle.position.x > 0) console.log('hit right')
     }
+    
+    mesh.bullet.position.x = app.camera.position.x - .5 + Math.cos(app.time * 1.75)
+    mesh.bullet.position.y = app.camera.position.y + .75 + Math.sin(app.time * 1.5) / 2 // -= .0025
   }
 
   // mesh.snow.rotation.x = Math.sin(app.time) / 2
