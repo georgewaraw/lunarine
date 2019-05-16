@@ -322,7 +322,7 @@ function inter() {
         y: null,
       },
     },
-    isEnabled = null,
+    isEnabled: null,
   };
 
   input.isEnabled = true;
@@ -339,7 +339,7 @@ function inter() {
   };
 
   const tj = new TWEEN.Tween(app.camera.position).to({y: 12.5}, 175).onComplete(() =>
-    new TWEEN.Tween(app.camera.position).to({y: 10}, 200).easing(TWEEN.Easing.Quadratic.Out).onComplete(() =>
+    new TWEEN.Tween(app.camera.position).to({y: 10}, 2000).easing(TWEEN.Easing.Quadratic.Out).onComplete(() =>
       input.isEnabled = true).start());
   const tsl = new TWEEN.Tween(app.camera.position).to({x: -1.25}, 250).easing(TWEEN.Easing.Quadratic.Out)
     .onComplete(() => input.isEnabled = true);
@@ -396,6 +396,12 @@ function inter() {
       case 'ArrowRight': case 'KeyD':
         act('strafeRight');
         break;
+      case 'KeyQ':
+        new TWEEN.Tween(app.camera.rotation).to({y: [30 * Math.PI / 180, 0]}, 500).start();
+        break;
+      case 'KeyE':
+        new TWEEN.Tween(app.camera.rotation).to({y: [-30 * Math.PI / 180, 0]}, 500).start();
+        break;
     }
 
     if (!app.isEnabled) start();
@@ -411,25 +417,6 @@ function anim(t) {
 
   mesh.snow.position.set(app.camera.position.x - .5, app.camera.position.y - .5, app.camera.position.z - 1);
 
-  if (app.isEnabled) {
-    mesh.planet.rotation.x += .0075;
-    mesh.tree.rotation.x += .0075;
-
-    mesh.obstacle.position.x = Math.cos(app.time * 1.75);
-    mesh.obstacle.position.y = app.camera.position.y + .75 + Math.sin(app.time * 1.5) / 2// -= .0025;
-    mesh.obstacle.position.z += .075;
-    if (mesh.obstacle.position.z > app.camera.position.z) {
-      // mesh.obstacle.position.y = app.camera.position.y + 1;
-      mesh.obstacle.position.z = app.camera.position.z - 30;
-    }
-  }
-
-  // mesh.snow.rotation.x = Math.sin(app.time) / 2;
-
-  Object.keys(shader).forEach(k => {
-    if (shader[k]) shader[k].uniforms.uTime.value = app.time;
-  });
-
   // https://threejs.org/docs/index.html#api/en/audio/AudioAnalyser
   if (app.isEnabled) {
     audio.amplitude = map(audio.analyser.getFrequencyData()[0], 0, 255, .1, 2);
@@ -438,7 +425,31 @@ function anim(t) {
     if (shader.obstacle) shader.obstacle.uniforms.uDistort.value = audio.amplitude;
     shader.snow.uniforms.uDistort.value = audio.amplitude;
     // console.log(map(audio.analyser.data[0], 0, 255, 0, 10))
+    
+    if (map(audio.analyser.data[0], 0, 255, 0, 10) > 1 && app.camera.position.y === 10) console.log('hit bottom')
+    
+    mesh.planet.rotation.x += .0075;
+    mesh.tree.rotation.x += .0075;
+
+    mesh.obstacle.position.x = Math.cos(app.time * 1.75);
+    // console.log(mesh.obstacle.position.x)
+    // console.log(app.camera.position.x)
+    mesh.obstacle.position.y = app.camera.position.y + .75 + Math.sin(app.time * 1.5) / 2; // -= .0025;
+    mesh.obstacle.position.z += .075;
+    if (mesh.obstacle.position.z > app.camera.position.z) {
+      // mesh.obstacle.position.y = app.camera.position.y + 1;
+      mesh.obstacle.position.z = app.camera.position.z - 30;
+      
+      if (app.camera.position.x < 0 && mesh.obstacle.position.x < 0) console.log('hit left')
+      else if (app.camera.position.x > 0 && mesh.obstacle.position.x > 0) console.log('hit right')
+    }    
   }
+
+  // mesh.snow.rotation.x = Math.sin(app.time) / 2;
+
+  Object.keys(shader).forEach(k => {
+    if (shader[k]) shader[k].uniforms.uTime.value = app.time;
+  });
 
   app.pass.shaderMaterial.uniforms.uTime.value = app.time;
   app.composer.render();
