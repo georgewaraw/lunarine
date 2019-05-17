@@ -143,7 +143,8 @@ function level() {
     s.uniforms.uDistort = {value: 1}
 
     s.vertexShader = su + s.vertexShader
-    s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', sv)
+    s.vertexShader = s.vertexShader.replace('#include <begin_vertex>',
+      sv.substring(0, sv.indexOf(';') + 1) + 'transformed.y *= 2.5;' + sv.substring(sv.indexOf(';') + 1))
   }
 
   mesh.planet = new THREE.Mesh(geometry.planet, material.planet)
@@ -331,6 +332,7 @@ function inter() {
   window.onorientationchange = () => location.reload()
 
   window.onresize = () => {
+    app.renderer.setPixelRatio(.2)
     app.renderer.setSize(window.innerWidth, window.innerHeight)
 
     app.camera.aspect = window.innerWidth / window.innerHeight
@@ -486,7 +488,7 @@ function anim(t) {
 
     if (map(audio.analyser.data[0], 0, 255, 0, 10) > 1 && app.camera.position.y === 10) {
       console.log('hit bottom')
-      app.renderer.setPixelRatio(.05)
+      // app.renderer.setPixelRatio(.05)
     }
 
     mesh.planet.rotation.x += .0075
@@ -503,11 +505,11 @@ function anim(t) {
 
       if (app.camera.position.x < 0 && mesh.obstacle.position.x < 0) {
         console.log('hit left')
-        app.renderer.setPixelRatio(.05)
+        // app.renderer.setPixelRatio(.05)
       }
       else if (app.camera.position.x > 0 && mesh.obstacle.position.x > 0) {
         console.log('hit right')
-        app.renderer.setPixelRatio(.05)
+        // app.renderer.setPixelRatio(.05)
       }
     }
     
