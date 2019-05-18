@@ -73,6 +73,7 @@ function level() {
   geometry = {
     planet: null,
     tree: null,
+    enemy: null,
     obstacle: null,
     bullet: null,
     snow: null,
@@ -81,6 +82,7 @@ function level() {
   material = {
     planet: null,
     tree: null,
+    enemy: null,
     obstacle: null,
     bullet: null,
     snow: null,
@@ -89,6 +91,7 @@ function level() {
   shader = {
     planet: null,
     tree: null,
+    enemy: null,
     obstacle: null,
     bullet: null,
     snow: null,
@@ -97,6 +100,7 @@ function level() {
   mesh = {
     planet: null,
     tree: null,
+    enemy: null,
     obstacle: null,
     bullet: null,
     snow: null,
@@ -124,6 +128,8 @@ function level() {
   `
 
 
+  // planet
+
   geometry.planet = new THREE.SphereGeometry(10, 24, 24)
   const cpd = new THREE.Color(getColor('dark'))
   const cpb = new THREE.Color(getColor('bright'))
@@ -144,7 +150,7 @@ function level() {
 
     s.vertexShader = su + s.vertexShader
     s.vertexShader = s.vertexShader.replace('#include <begin_vertex>',
-      sv.substring(0, sv.indexOf(';') + 1) + 'transformed.y *= 2.5;' + sv.substring(sv.indexOf(';') + 1))
+      sv.substring(0, sv.indexOf(';') + 1) + 'transformed.y *= 2.;' + sv.substring(sv.indexOf(';') + 1))
   }
 
   mesh.planet = new THREE.Mesh(geometry.planet, material.planet)
@@ -152,6 +158,8 @@ function level() {
   mesh.planet.rotation.set(0, 0, 90 * Math.PI / 180)
   app.scene.add(mesh.planet)
 
+
+  // tree
 
   geometry.tree = new THREE.Geometry()
   geometry.planet.faces.forEach((f, i) => {
@@ -190,6 +198,38 @@ function level() {
   app.scene.add(mesh.tree)
 
 
+  // enemy
+
+  geometry.enemy = new THREE.OctahedronBufferGeometry(1)
+
+  material.enemy = new THREE.MeshLambertMaterial({
+    transparent: true,
+    opacity: .75,
+    color: getColor('bright'),
+  })
+
+  material.enemy.onBeforeCompile = s => {
+    shader.enemy = s
+
+    s.uniforms.uTime = {value: 0}
+    s.uniforms.uMorph = {value: 20}
+    s.uniforms.uDistort = {value: 1}
+
+    s.vertexShader = su + s.vertexShader
+    s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', sv.substring(0, sv.indexOf(';') + 1) + `
+      transformed.x *= .75;
+      transformed.y *= 1.5;
+      transformed.z *= .75;
+    ` + sv.substring(sv.indexOf(';') + 1))
+  }
+
+  mesh.enemy = new THREE.Mesh(geometry.enemy, material.enemy)
+  mesh.enemy.castShadow = true
+  mesh.enemy.position.set(0, 12.5, -12.5)
+
+
+  // obstacle
+
   geometry.obstacle = new THREE.CylinderBufferGeometry(0, .25, 1)
 
   material.obstacle = new THREE.MeshLambertMaterial({
@@ -213,8 +253,10 @@ function level() {
   mesh.obstacle.castShadow = true
   mesh.obstacle.position.set(app.camera.position.x - .5, app.camera.position.y + .75, app.camera.position.z - 30)
   mesh.obstacle.rotation.set(90 * Math.PI / 180, 0, 0)
-  
-  
+
+
+  // bullet
+
   geometry.bullet = new THREE.CylinderBufferGeometry(0, .25, 1)
 
   material.bullet = new THREE.MeshLambertMaterial({
@@ -241,6 +283,8 @@ function level() {
   app.scene.add(mesh.bullet)
 
 
+  // snow
+
   geometry.snow = new THREE.Geometry()
   for (let i = 1000; i--;) geometry.snow.vertices.push(new THREE.Vector3(Math.random(), Math.random(), Math.random()))
 
@@ -266,6 +310,8 @@ function level() {
   mesh.snow = new THREE.Points(geometry.snow, material.snow)
   app.scene.add(mesh.snow)
 
+
+  // title
 
   new THREE.FontLoader().load('json/VT323_Regular.json', f => {
     geometry.title = new THREE.TextBufferGeometry(' waraws\nLUNARINE', {
@@ -370,6 +416,7 @@ function inter() {
     app.scene.remove(mesh.title)
     material.planet.opacity = .75
     material.tree.opacity = .75
+    app.scene.add(mesh.enemy)
     app.scene.add(mesh.obstacle)
   }
 
@@ -482,6 +529,7 @@ function anim(t) {
     audio.amplitude = map(audio.analyser.getFrequencyData()[0], 0, 255, .1, 2)
     shader.planet.uniforms.uDistort.value = audio.amplitude
     shader.tree.uniforms.uDistort.value = audio.amplitude
+    if (shader.enemy) shader.enemy.uniforms.uDistort.value = audio.amplitude * 1.25
     if (shader.obstacle) shader.obstacle.uniforms.uDistort.value = audio.amplitude
     shader.snow.uniforms.uDistort.value = audio.amplitude
     // console.log(map(audio.analyser.data[0], 0, 255, 0, 10))
@@ -497,7 +545,7 @@ function anim(t) {
     mesh.obstacle.position.x = Math.cos(app.time * 1.75)
     // console.log(mesh.obstacle.position.x)
     // console.log(app.camera.position.x)
-    mesh.obstacle.position.y = app.camera.position.y + .75 + Math.sin(app.time * 1.5) / 2 // -= .0025
+    mesh.obstacle.position.y = app.camera.position.y + .75 + Math.sin(app.time * 1.5) * .5 // -= .0025
     mesh.obstacle.position.z += .075
     if (mesh.obstacle.position.z > app.camera.position.z) {
       // mesh.obstacle.position.y = app.camera.position.y + 1
@@ -512,9 +560,11 @@ function anim(t) {
         // app.renderer.setPixelRatio(.05)
       }
     }
-    
+
+    mesh.enemy.rotation.y = app.time
+
     mesh.bullet.position.x = app.camera.position.x - .5 + Math.cos(app.time * 1.75)
-    mesh.bullet.position.y = app.camera.position.y + .75 + Math.sin(app.time * 1.5) / 2 // -= .0025
+    mesh.bullet.position.y = app.camera.position.y + .75 + Math.sin(app.time * 1.5) * .5 // -= .0025
   }
 
   // mesh.snow.rotation.x = Math.sin(app.time) / 2
