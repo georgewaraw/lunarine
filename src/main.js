@@ -28,6 +28,8 @@ function init() {
     pass: null,
     time: null,
     isEnabled: null,
+    start: null,
+    stop: null,
   }
 
   app.renderer = new THREE.WebGLRenderer({
@@ -77,7 +79,10 @@ function level() {
     obstacle: null,
     bullet: null,
     snow: null,
-    title: null,
+    text: {
+      title: null,
+      end: null,
+    },
   }
   material = {
     planet: null,
@@ -86,7 +91,7 @@ function level() {
     obstacle: null,
     bullet: null,
     snow: null,
-    title: null,
+    text: null,
   }
   shader = {
     planet: null,
@@ -95,7 +100,7 @@ function level() {
     obstacle: null,
     bullet: null,
     snow: null,
-    title: null,
+    text: null,
   }
   mesh = {
     planet: null,
@@ -104,7 +109,10 @@ function level() {
     obstacle: null,
     bullet: null,
     snow: null,
-    title: null,
+    text: {
+      title: null,
+      end: null,
+    },
   }
 
 
@@ -257,7 +265,7 @@ function level() {
 
   // bullet
 
-  geometry.bullet = new THREE.CylinderBufferGeometry(0, .25, 1)
+  geometry.bullet = new THREE.SphereBufferGeometry(.25, 24, 24)
 
   material.bullet = new THREE.MeshLambertMaterial({
     transparent: true,
@@ -276,7 +284,7 @@ function level() {
     s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', sv)
   }
 
-  mesh.bullet = new THREE.Mesh(geometry.obstacle, material.obstacle)
+  mesh.bullet = new THREE.Mesh(geometry.bullet, material.bullet)
   mesh.bullet.castShadow = true
   mesh.bullet.position.set(app.camera.position.x - .5, app.camera.position.y + .75, 7.5)
   mesh.bullet.rotation.set(270 * Math.PI / 180, 0, 0)
@@ -314,20 +322,20 @@ function level() {
   // title
 
   new THREE.FontLoader().load('json/VT323_Regular.json', f => {
-    geometry.title = new THREE.TextBufferGeometry(' waraws\nLUNARINE', {
+    geometry.text.title = new THREE.TextBufferGeometry(' waraws\nLUNARINE', {
       font: f,
       size: .1,
       height: .01,
     })
 
-    material.title = new THREE.MeshLambertMaterial({
+    material.text = new THREE.MeshLambertMaterial({
       transparent: true,
       opacity: .75,
       color: getColor('dark'),
     })
 
-    material.title.onBeforeCompile = s => {
-      shader.title = s
+    material.text.onBeforeCompile = s => {
+      shader.text = s
 
       s.uniforms.uTime = {value: 0}
       s.uniforms.uMorph = {value: .75}
@@ -337,9 +345,9 @@ function level() {
       s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', sv)
     }
 
-    mesh.title = new THREE.Mesh(geometry.title, material.title)
-    mesh.title.position.set(app.camera.position.x - .225, app.camera.position.y + .1, app.camera.position.z - 1.25)
-    app.scene.add(mesh.title)
+    mesh.text.title = new THREE.Mesh(geometry.text.title, material.text)
+    mesh.text.title.position.set(app.camera.position.x - .225, app.camera.position.y + .1, app.camera.position.z - 1.25)
+    app.scene.add(mesh.text.title)
   })
 }
 
@@ -406,18 +414,46 @@ function inter() {
     isJumping: null,
     isStrafing: null,
     isShooting: null,
+    isWounded: null,
+    score: null,
   }
 
-  const start = () => {
+  player.isWounded = 0;
+
+  app.start = () => {
     app.isEnabled = true
 
     sound()
 
-    app.scene.remove(mesh.title)
+    app.scene.remove(mesh.text.title)
     material.planet.opacity = .75
     material.tree.opacity = .75
     app.scene.add(mesh.enemy)
     app.scene.add(mesh.obstacle)
+  }
+
+  app.stop = () => {
+    app.isEnabled = false
+    app.restart = true
+
+    shader.planet.uniforms.uDistort.value = 1
+    shader.tree.uniforms.uDistort.value = 1
+    shader.snow.uniforms.uDistort.value = 1
+    material.planet.opacity = .25
+    material.tree.opacity = .25
+    app.scene.remove(mesh.enemy)
+    app.scene.remove(mesh.obstacle)
+    new THREE.FontLoader().load('json/VT323_Regular.json', f => {
+      geometry.text.end = new THREE.TextBufferGeometry(`score:${Math.round(player.score)}\nSTART OVER`, {
+        font: f,
+        size: .1,
+        height: .01,
+      })
+
+      mesh.text.end = new THREE.Mesh(geometry.text.end, material.text)
+      mesh.text.end.position.set(app.camera.position.x - .28, app.camera.position.y + .1, app.camera.position.z - 1.25)
+      app.scene.add(mesh.text.end)
+    })
   }
 
   const tj = new TWEEN.Tween(app.camera.position).to({y: 12.5}, 175).onComplete(() =>
@@ -470,7 +506,7 @@ function inter() {
     input.touch.start.x = e.changedTouches[0].clientX / window.innerWidth * 2 - 1
     input.touch.start.y = e.changedTouches[0].clientY / window.innerHeight * -2 + 1
 
-    if (!app.isEnabled) start()
+    if (!app.isEnabled) app.start()
   }
 
   window.ontouchend = e => {
@@ -511,7 +547,13 @@ function inter() {
         break
     }
 
-    if (!app.isEnabled) start()
+    if (!app.isEnabled) {
+      if (app.restart) {
+        app.restart = false
+
+        location.reload()
+      } else app.start()
+    }
   }
 }
 
@@ -535,7 +577,7 @@ function anim(t) {
     // console.log(map(audio.analyser.data[0], 0, 255, 0, 10))
 
     if (map(audio.analyser.data[0], 0, 255, 0, 10) > 1 && app.camera.position.y === 10) {
-      console.log('hit bottom')
+      // console.log('hit bottom')
       // app.renderer.setPixelRatio(.05)
     }
 
@@ -552,11 +594,13 @@ function anim(t) {
       mesh.obstacle.position.z = app.camera.position.z - 30
 
       if (app.camera.position.x < 0 && mesh.obstacle.position.x < 0) {
-        console.log('hit left')
+        // console.log('hit left')
+        if (player.isWounded++) app.stop()
         // app.renderer.setPixelRatio(.05)
       }
       else if (app.camera.position.x > 0 && mesh.obstacle.position.x > 0) {
-        console.log('hit right')
+        // console.log('hit right')
+        if (player.isWounded++) app.stop()
         // app.renderer.setPixelRatio(.05)
       }
     }
@@ -565,6 +609,13 @@ function anim(t) {
 
     mesh.bullet.position.x = app.camera.position.x - .5 + Math.cos(app.time * 1.75)
     mesh.bullet.position.y = app.camera.position.y + .75 + Math.sin(app.time * 1.5) * .5 // -= .0025
+
+    if ((mesh.bullet.position.z < 7.5 && mesh.bullet.position.z > -10) &&
+      (Math.abs(mesh.bullet.position.z - mesh.obstacle.position.z) < 1) &&
+      ((mesh.bullet.position.x < 0 && mesh.obstacle.position.x < 0) ||
+      (mesh.bullet.position.x > 0 && mesh.obstacle.position.x > 0))) console.log('nullify')
+
+    player.score = app.time
   }
 
   // mesh.snow.rotation.x = Math.sin(app.time) / 2
