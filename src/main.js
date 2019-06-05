@@ -1,127 +1,223 @@
-let app, light, geometry, material, shader, mesh, input, player, audio
-
-const getInt = (l, h) => Math.floor(Math.random() * (h - l) + l)
+const random = (l, h) => Math.floor(Math.random() * (h - l) + l)
 
 const map = (n, il, ih, ol, oh) => (n - il) * (oh - ol) / (ih - il) + ol
 
-const getColor = b => {
+const color = b => {
   let l = 10
 
   switch (b) {
-    case 'bright':
-      l *= 2
-    case 'normal':
-      l *= 2
-    case 'dark':
-      l *= 2
+    case 'bright': l *= 2
+    case 'normal': l *= 2
+    case 'dark': l *= 2
   }
 
-  return `hsl(${getInt(0, 360)}, ${getInt(0, 101)}%, ${l}%)`
+  return `hsl(${random(0, 360)}, ${random(0, 101)}%, ${l}%)`
 }
 
-function init() {
-  app = {
-    renderer: null,
-    camera: null,
-    scene: null,
-    composer: null,
-    pass: null,
-    time: null,
-    isEnabled: null,
-    start: null,
-    stop: null,
-  }
+function Game() {
+  const c = color('bright')
+  let g = 0
 
-  app.renderer = new THREE.WebGLRenderer({
+  this.renderer = new THREE.WebGLRenderer({
     canvas: document.getElementsByTagName('canvas')[0],
   })
-  app.renderer.setPixelRatio(.2)
-  app.renderer.setSize(window.innerWidth, window.innerHeight)
-  const cc = getColor('bright')
-  app.renderer.setClearColor(cc)
-  app.renderer.shadowMap.enabled = true
+  this.renderer.setPixelRatio(.2)
+  this.renderer.setSize(window.innerWidth, window.innerHeight)
+  this.renderer.setClearColor(c)
+  this.renderer.shadowMap.enabled = true
 
-  app.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, .1, 1000)
-  app.camera.position.set(0, 10, 7.5)
+  this.scene = new THREE.Scene()
+  this.scene.fog = new THREE.FogExp2(c, .075)
 
-  app.scene = new THREE.Scene()
-  app.scene.fog = new THREE.FogExp2(cc, .075)
-  app.scene.add(app.camera)
+  this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, .1, 1000)
+  this.camera.position.set(0, 10, 7.5)
+  this.scene.add(this.camera)
 
-  level()
-  post()
-  inter()
-  anim()
+  this.pass = new THREE.Post()
+  this.pass.renderToScreen = true
+
+  this.composer = new THREE.EffectComposer(this.renderer)
+  this.composer.addPass(new THREE.RenderPass(this.scene, this.camera))
+  this.composer.addPass(this.pass)
+
+  this.running = false
+
+  this.begin = () => {
+    if (g) {
+      this.running = true
+
+      material.groundL.opacity = 1
+      material.groundR.opacity = 1
+      material.tree.opacity = .75
+
+      game.scene.remove(score.mesh)
+      game.scene.add(mesh.enemy)
+
+      mesh.animation.forEach(a => a.start())
+    } else {
+      g++
+
+      audio = new Audio()
+
+      new TWEEN.Tween(material.text).to({opacity: 0}, 1).easing(TWEEN.Easing.Quadratic.Out).onComplete(() => {
+        // ! +- `1` => `1250`
+        game.scene.remove(title.mesh)
+        game.scene.add(instructions.mesh)
+
+        new TWEEN.Tween(material.text).to({opacity: .75}, 1).easing(TWEEN.Easing.Quadratic.Out) // ! +- `1`
+          .onComplete(() => {
+          this.running = true
+
+          material.groundL.opacity = 1
+          material.groundR.opacity = 1
+          material.tree.opacity = .75
+
+          game.scene.remove(instructions.mesh)
+          game.scene.add(mesh.enemy)
+
+          mesh.animation.forEach(a => a.start())
+        }).start()
+      }).start()
+    }
+  }
+
+  this.end = () => {
+    this.running = false
+
+    material.groundL.opacity = .25
+    material.groundR.opacity = .25
+    material.tree.opacity = .25
+    material.text.opacity = .75
+
+    shader.tree.uniforms.uDistort.value = .75
+
+    score = new Text(`SCORE:${('00000' + Math.round(player.score)).slice(-5)}`, new THREE.Vector3(-.3, 10.1, 6.25))
+    game.scene.remove(mesh.enemy)
+
+    mesh.animation.forEach(a => a.stop())
+
+    player.is = 'center'
+    player.score = 0
+
+    game.camera.position.x = 0
+    game.pass.shader.uniforms.uAmount.value = .75
+
+    mesh.groundL.rotation.x = 0
+    mesh.groundR.rotation.x = 0
+    mesh.tree.rotation.x = 0
+    mesh.enemy.position.y = 12.5
+    mesh.enemy.rotation.y = 0
+  }
+
+  this.time = 0
+
+  window.onorientationchange = () => location.reload()
+
+  window.onresize = () => {
+    this.renderer.setPixelRatio(.2)
+    this.renderer.setSize(window.innerWidth, window.innerHeight)
+
+    this.camera.aspect = window.innerWidth / window.innerHeight
+    this.camera.updateProjectionMatrix()
+
+    this.pass.setSize(window.innerWidth, window.innerHeight)
+    this.composer.reset()
+  }
 }
 
-function level() {
-  light = {
-    ambient: null,
-    point: null,
-  }
+function Light() {
+  const c = color('bright')
 
-  let cl = getColor('bright')
+  this.ambient = new THREE.AmbientLight(c, .5)
+  game.scene.add(this.ambient)
 
-  light.ambient = new THREE.AmbientLight(cl, .5)
-  app.scene.add(light.ambient)
+  this.point = new THREE.PointLight(c, .5, 100)
+  this.point.position.set(5, 5, 5)
+  this.point.castShadow = true
+  this.point.shadow.mapSize = new THREE.Vector2(512, 512)
+  game.camera.add(this.point)
+}
 
-  light.point = new THREE.PointLight(cl, .5, 100)
-  light.point.position.set(5, 5, 5)
-  light.point.castShadow = true
-  light.point.shadow.mapSize = new THREE.Vector2(512, 512)
-  app.camera.add(light.point)
+function Geometry() {
+  const cb = new THREE.Color(color('bright'))
+  const cd = new THREE.Color(color('dark'))
 
+  this.groundL = new THREE.SphereGeometry(10, 24, 24)
+  this.groundL.vertices.forEach(v => v.y = Math.max(v.y, 0))
+  this.groundL.faces.forEach((f, i) => f.color = i % 2 ? cb : cd)
 
-  geometry = {
-    planet: null,
-    tree: null,
-    enemy: null,
-    obstacle: null,
-    bullet: null,
-    snow: null,
-    text: {
-      title: null,
-      end: null,
-    },
-  }
-  material = {
-    planet: null,
-    tree: null,
-    enemy: null,
-    obstacle: null,
-    bullet: null,
-    snow: null,
-    text: null,
-  }
-  shader = {
-    planet: null,
-    tree: null,
-    enemy: null,
-    obstacle: null,
-    bullet: null,
-    snow: null,
-    text: null,
-  }
-  mesh = {
-    planet: null,
-    tree: null,
-    enemy: null,
-    obstacle: null,
-    bullet: null,
-    snow: null,
-    text: {
-      title: null,
-      end: null,
-    },
-  }
+  this.groundR = new THREE.SphereGeometry(10, 24, 24)
+  this.groundR.vertices.forEach(v => v.y = Math.min(v.y, 0))
+  this.groundR.faces.forEach((f, i) => f.color = i % 2 ? cb : cd)
 
+  this.tree = new THREE.Geometry()
+  this.groundL.faces.forEach((f, i) => {
+    if (!(i % 20)) {
+      const g = new THREE.CylinderGeometry(0, .25, 5)
+      g.rotateX(90 * Math.PI / 180)
+      g.lookAt(f.normal)
+      g.translate(f.normal.x * 10, f.normal.y * 10, f.normal.z * 10)
+      this.tree.merge(g)
+    }
+  })
 
-  const su = `
+  this.enemy = new THREE.OctahedronBufferGeometry(1)
+
+  this.snow = new THREE.Geometry()
+  for (let i = 1000; i--;) this.snow.vertices.push(new THREE.Vector3(Math.random(), Math.random(), Math.random()))
+}
+
+function Material() {
+  const c = color('bright')
+
+  this.groundL = new THREE.MeshLambertMaterial({
+    transparent: true,
+    opacity: .25,
+    vertexColors: THREE.FaceColors,
+  })
+
+  this.groundR = new THREE.MeshLambertMaterial({
+    transparent: true,
+    opacity: .25,
+    vertexColors: THREE.FaceColors,
+  })
+
+  this.tree = new THREE.MeshLambertMaterial({
+    side: THREE.DoubleSide,
+    depthWrite: false,
+    transparent: true,
+    opacity: .25,
+    color: color('bright'),
+  })
+
+  this.enemy = new THREE.MeshLambertMaterial({
+    transparent: true,
+    opacity: .75,
+    color: c,
+  })
+
+  this.snow = new THREE.PointsMaterial({
+    size: .01,
+    depthWrite: false,
+    transparent: true,
+    opacity: .25,
+    color: color('normal'),
+  })
+
+  this.text = new THREE.MeshLambertMaterial({
+    transparent: true,
+    opacity: .75,
+    color: color('dark'),
+  })
+}
+
+function Shader() {
+  const u = `
     uniform float uTime;
     uniform float uMorph;
     uniform float uDistort;
   `
-  const sv = `
+  const v = `
     vec3 transformed = vec3(position);
 
     transformed.x += sin((position.x + uTime * .375) * 20.) * .0015 * uMorph;
@@ -135,495 +231,291 @@ function level() {
     }
   `
 
+  this.uTime = []
 
-  // planet
+  material.groundL.onBeforeCompile = s => {
+    this.groundL = s
 
-  geometry.planet = new THREE.SphereGeometry(10, 24, 24)
-  const cpd = new THREE.Color(getColor('dark'))
-  const cpb = new THREE.Color(getColor('bright'))
-  geometry.planet.faces.forEach((f, i) => f.color = i % 2 ? cpd : cpb)
-
-  material.planet = new THREE.MeshLambertMaterial({
-    transparent: true,
-    opacity: .25,
-    vertexColors: THREE.FaceColors,
-  })
-
-  material.planet.onBeforeCompile = s => {
-    shader.planet = s
-
-    s.uniforms.uTime = {value: 0}
+    this.uTime.push(s.uniforms.uTime = {value: 0})
     s.uniforms.uMorph = {value: 10}
-    s.uniforms.uDistort = {value: 1}
+    s.uniforms.uDistort = {value: .1}
 
-    s.vertexShader = su + s.vertexShader
-    s.vertexShader = s.vertexShader.replace('#include <begin_vertex>',
-      sv.substring(0, sv.indexOf(';') + 1) + 'transformed.y *= 2.;' + sv.substring(sv.indexOf(';') + 1))
+    s.vertexShader = u + s.vertexShader
+    s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', v.substring(0, v.indexOf(';') + 1) + `
+        transformed.y *= 2.;
+      ` + v.substring(v.indexOf(';') + 1))
   }
 
-  mesh.planet = new THREE.Mesh(geometry.planet, material.planet)
-  mesh.planet.receiveShadow = true
-  mesh.planet.rotation.set(0, 0, 90 * Math.PI / 180)
-  app.scene.add(mesh.planet)
+  material.groundR.onBeforeCompile = s => {
+    this.groundR = s
 
+    this.uTime.push(s.uniforms.uTime = {value: 0})
+    s.uniforms.uMorph = {value: 10}
+    s.uniforms.uDistort = {value: .1}
 
-  // tree
-
-  geometry.tree = new THREE.Geometry()
-  geometry.planet.faces.forEach((f, i) => {
-    if (!(i % 20)) {
-      // let gt = new THREE.PlaneGeometry(2, 1)
-      // gt.rotateY(270 * Math.PI / 180)
-      let gt = new THREE.CylinderGeometry(0, .25, 5)
-      gt.rotateX(90 * Math.PI / 180)
-      gt.lookAt(f.normal)
-      gt.translate(f.normal.x * 10, f.normal.y * 10, f.normal.z * 10)
-      geometry.tree.merge(gt)
-    }
-  })
-
-  material.tree = new THREE.MeshLambertMaterial({
-    side: THREE.DoubleSide,
-    depthWrite: false,
-    transparent: true,
-    opacity: .25,
-    color: getColor('bright'),
-  })
+    s.vertexShader = u + s.vertexShader
+    s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', v.substring(0, v.indexOf(';') + 1) + `
+        transformed.y *= 2.;
+      ` + v.substring(v.indexOf(';') + 1))
+  }
 
   material.tree.onBeforeCompile = s => {
-    shader.tree = s
+    this.tree = s
 
-    s.uniforms.uTime = {value: 0}
+    this.uTime.push(s.uniforms.uTime = {value: 0})
     s.uniforms.uMorph = {value: 10}
-    s.uniforms.uDistort = {value: 1}
+    s.uniforms.uDistort = {value: .75}
 
-    s.vertexShader = su + s.vertexShader
-    s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', sv)
+    s.vertexShader = u + s.vertexShader
+    s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', v)
   }
 
-  mesh.tree = new THREE.Mesh(geometry.tree, material.tree)
-  mesh.tree.castShadow = true
-  app.scene.add(mesh.tree)
-
-
-  // enemy
-
-  geometry.enemy = new THREE.OctahedronBufferGeometry(1)
-
-  material.enemy = new THREE.MeshLambertMaterial({
-    transparent: true,
-    opacity: .75,
-    color: getColor('bright'),
-  })
-
   material.enemy.onBeforeCompile = s => {
-    shader.enemy = s
+    this.enemy = s
 
-    s.uniforms.uTime = {value: 0}
+    this.uTime.push(s.uniforms.uTime = {value: 0})
     s.uniforms.uMorph = {value: 20}
     s.uniforms.uDistort = {value: 1}
 
-    s.vertexShader = su + s.vertexShader
-    s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', sv.substring(0, sv.indexOf(';') + 1) + `
-      transformed.x *= .75;
-      transformed.y *= 1.5;
-      transformed.z *= .75;
-    ` + sv.substring(sv.indexOf(';') + 1))
+    s.vertexShader = u + s.vertexShader
+    s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', v.substring(0, v.indexOf(';') + 1) + `
+        transformed.x *= .75;
+        transformed.y *= 1.5;
+        transformed.z *= .75;
+      ` + v.substring(v.indexOf(';') + 1))
   }
-
-  mesh.enemy = new THREE.Mesh(geometry.enemy, material.enemy)
-  mesh.enemy.castShadow = true
-  mesh.enemy.position.set(0, 12.5, -12.5)
-
-
-  // obstacle
-
-  geometry.obstacle = new THREE.CylinderBufferGeometry(0, .25, 1)
-
-  material.obstacle = new THREE.MeshLambertMaterial({
-    transparent: true,
-    opacity: .75,
-    color: getColor('bright'),
-  })
-
-  material.obstacle.onBeforeCompile = s => {
-    shader.obstacle = s
-
-    s.uniforms.uTime = {value: 0}
-    s.uniforms.uMorph = {value: 30}
-    s.uniforms.uDistort = {value: 0}
-
-    s.vertexShader = su + s.vertexShader
-    s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', sv)
-  }
-
-  mesh.obstacle = new THREE.Mesh(geometry.obstacle, material.obstacle)
-  mesh.obstacle.castShadow = true
-  mesh.obstacle.position.set(app.camera.position.x - .5, app.camera.position.y + .75, app.camera.position.z - 30)
-  mesh.obstacle.rotation.set(90 * Math.PI / 180, 0, 0)
-
-
-  // bullet
-
-  geometry.bullet = new THREE.SphereBufferGeometry(.25, 24, 24)
-
-  material.bullet = new THREE.MeshLambertMaterial({
-    transparent: true,
-    opacity: .75,
-    color: getColor('bright'),
-  })
-
-  material.bullet.onBeforeCompile = s => {
-    shader.bullet = s
-
-    s.uniforms.uTime = {value: 0}
-    s.uniforms.uMorph = {value: 30}
-    s.uniforms.uDistort = {value: 0}
-
-    s.vertexShader = su + s.vertexShader
-    s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', sv)
-  }
-
-  mesh.bullet = new THREE.Mesh(geometry.bullet, material.bullet)
-  mesh.bullet.castShadow = true
-  mesh.bullet.position.set(app.camera.position.x - .5, app.camera.position.y + .75, 7.5)
-  mesh.bullet.rotation.set(270 * Math.PI / 180, 0, 0)
-  app.scene.add(mesh.bullet)
-
-
-  // snow
-
-  geometry.snow = new THREE.Geometry()
-  for (let i = 1000; i--;) geometry.snow.vertices.push(new THREE.Vector3(Math.random(), Math.random(), Math.random()))
-
-  material.snow = new THREE.PointsMaterial({
-    size : .01,
-    transparent: true,
-    opacity: .25,
-    depthWrite: false,
-    color: getColor('normal'),
-  })
 
   material.snow.onBeforeCompile = s => {
-    shader.snow = s
+    this.snow = s
 
-    s.uniforms.uTime = {value: 0}
+    this.uTime.push(s.uniforms.uTime = {value: 0})
     s.uniforms.uMorph = {value: 10}
     s.uniforms.uDistort = {value: 1}
 
-    s.vertexShader = su + s.vertexShader
-    s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', sv)
+    s.vertexShader = u + s.vertexShader
+    s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', v)
   }
 
-  mesh.snow = new THREE.Points(geometry.snow, material.snow)
-  app.scene.add(mesh.snow)
+  material.text.onBeforeCompile = s => {
+    this.text = s
 
+    this.uTime.push(s.uniforms.uTime = {value: 0})
+    s.uniforms.uMorph = {value: .75}
+    s.uniforms.uDistort = {value: .001}
 
-  // title
+    s.vertexShader = u + s.vertexShader
+    s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', v)
+  }
 
-  new THREE.FontLoader().load('json/VT323_Regular.json', f => {
-    geometry.text.title = new THREE.TextBufferGeometry(' waraws\nLUNARINE', {
-      font: f,
-      size: .1,
-      height: .01,
-    })
+  this.distort = 'left'
+}
 
-    material.text = new THREE.MeshLambertMaterial({
-      transparent: true,
-      opacity: .75,
-      color: getColor('dark'),
-    })
+function Mesh() {
+  this.animation = []
 
-    material.text.onBeforeCompile = s => {
-      shader.text = s
+  this.groundL = new THREE.Mesh(geometry.groundL, material.groundL)
+  this.groundL.receiveShadow = true
+  this.groundL.rotation.set(0, 0, 90 * Math.PI / 180)
+  game.scene.add(this.groundL)
+  this.animation.push(new TWEEN.Tween(this.groundL.rotation).to({x: 360 * Math.PI / 180}, 10000).repeat(Infinity))
 
-      s.uniforms.uTime = {value: 0}
-      s.uniforms.uMorph = {value: .75}
-      s.uniforms.uDistort = {value: .001}
+  this.groundR = new THREE.Mesh(geometry.groundR, material.groundR)
+  this.groundR.receiveShadow = true
+  this.groundR.rotation.set(0, 0, 90 * Math.PI / 180)
+  game.scene.add(this.groundR)
+  this.animation.push(new TWEEN.Tween(this.groundR.rotation).to({x: 360 * Math.PI / 180}, 10000).repeat(Infinity))
 
-      s.vertexShader = su + s.vertexShader
-      s.vertexShader = s.vertexShader.replace('#include <begin_vertex>', sv)
+  this.tree = new THREE.Mesh(geometry.tree, material.tree)
+  this.tree.castShadow = true
+  game.scene.add(this.tree)
+  this.animation.push(new TWEEN.Tween(this.tree.rotation).to({x: 360 * Math.PI / 180}, 10000).repeat(Infinity))
+
+  this.enemy = new THREE.Mesh(geometry.enemy, material.enemy)
+  this.enemy.castShadow = true
+  this.enemy.position.set(-1.5, 12.5, -12.5)
+  this.animation.push(new TWEEN.Tween(this.enemy.position).to({y: [12, 13, 12.5]}, 10000).repeat(Infinity))
+  this.animation.push(new TWEEN.Tween(this.enemy.rotation).to({y: 360 * Math.PI / 180}, 10000).repeat(Infinity))
+
+  this.snow = new THREE.Points(geometry.snow, material.snow)
+  game.scene.add(this.snow)
+
+  // ? move
+  const l = new TWEEN.Tween(this.enemy.position).to({x: -1.5}, 5000).easing(TWEEN.Easing.Quadratic.In)
+    .onComplete(() => shader.distort = 'left')
+  const r = new TWEEN.Tween(this.enemy.position).to({x: 1.5}, 5000).easing(TWEEN.Easing.Quadratic.In)
+    .onComplete(() => shader.distort = 'right')
+  const t1 = new TWEEN.Tween().to({}, 5000)
+  const t2 = new TWEEN.Tween().to({}, 5000)
+  const d = () => {
+    if (!random(0, 5)) {
+      if (shader.distort === 'left') r.start()
+      else l.start()
     }
+  }
+  t1.onComplete(() => {
+    d()
+    t2.start()
+  }).start()
+  t2.onComplete(() => {
+    d()
+    t1.start()
+  }).start()
+}
 
-    mesh.text.title = new THREE.Mesh(geometry.text.title, material.text)
-    mesh.text.title.position.set(app.camera.position.x - .225, app.camera.position.y + .1, app.camera.position.z - 1.25)
-    app.scene.add(mesh.text.title)
+function Text(t, p, v = true) {
+  new THREE.FontLoader().load('json/VT323_Regular.json', f => {
+    this.mesh = new THREE.Mesh(new THREE.TextBufferGeometry(t, {font: f, size: .1, height: .01}), material.text)
+    this.mesh.position.copy(p)
+    if (v) game.scene.add(this.mesh)
   })
 }
 
-function post() {
-  app.composer = new THREE.EffectComposer(app.renderer)
-  app.composer.addPass(new THREE.RenderPass(app.scene, app.camera))
-  app.composer.addPass(app.pass = new THREE.Post())
-  app.pass.renderToScreen = true
-}
+function Player() {
+  let m = false
+  this.is = 'center'
 
-function sound() {
-  audio = {
-    listener: null,
-    loader: null,
-    sample: null,
-    analyser: null,
-    amplitude: null,
-  }
+  const l = new TWEEN.Tween(game.camera.position).to({x: -1.5}, 250).easing(TWEEN.Easing.Quadratic.Out)
+    .onComplete(() => m = false)
+  const r = new TWEEN.Tween(game.camera.position).to({x: 1.5}, 250).easing(TWEEN.Easing.Quadratic.Out)
+    .onComplete(() => m = false)
 
-  audio.listener = new THREE.AudioListener()
-  app.camera.add(audio.listener)
+  const mo = d => {
+    if (!m) {
+      switch (d) {
+        case 'left':
+          if (this.is !== 'left') {
+            m = true
+            this.is = 'left'
 
-  audio.loader = new THREE.AudioLoader()
-
-  audio.sample = new THREE.Audio(audio.listener)
-  audio.loader.load('mp3/audio.mp3', b => {
-    audio.sample.setBuffer(b)
-    audio.sample.setLoop(true)
-    audio.sample.play()
-  })
-
-  audio.analyser = new THREE.AudioAnalyser(audio.sample) // ? + ', 32'
-}
-
-function inter() {
-  window.onorientationchange = () => location.reload()
-
-  window.onresize = () => {
-    app.renderer.setPixelRatio(.2)
-    app.renderer.setSize(window.innerWidth, window.innerHeight)
-
-    app.camera.aspect = window.innerWidth / window.innerHeight
-    app.camera.updateProjectionMatrix()
-
-    app.pass.setSize(window.innerWidth, window.innerHeight)
-    app.composer.reset()
-  }
-
-
-  input = {
-    touch: {
-      start: {
-        x: null,
-        y: null,
-      },
-      end: {
-        x: null,
-        y: null,
-      },
-    },
-  }
-
-  player = {
-    isJumping: null,
-    isStrafing: null,
-    isShooting: null,
-    isWounded: null,
-    score: null,
-  }
-
-  player.isWounded = 0;
-
-  app.start = () => {
-    app.isEnabled = true
-
-    sound()
-
-    app.scene.remove(mesh.text.title)
-    material.planet.opacity = .75
-    material.tree.opacity = .75
-    app.scene.add(mesh.enemy)
-    app.scene.add(mesh.obstacle)
-  }
-
-  app.stop = () => {
-    app.isEnabled = false
-    app.restart = true
-
-    shader.planet.uniforms.uDistort.value = 1
-    shader.tree.uniforms.uDistort.value = 1
-    shader.snow.uniforms.uDistort.value = 1
-    material.planet.opacity = .25
-    material.tree.opacity = .25
-    app.scene.remove(mesh.enemy)
-    app.scene.remove(mesh.obstacle)
-    new THREE.FontLoader().load('json/VT323_Regular.json', f => {
-      geometry.text.end = new THREE.TextBufferGeometry(`score:${Math.round(player.score)}\nSTART OVER`, {
-        font: f,
-        size: .1,
-        height: .01,
-      })
-
-      mesh.text.end = new THREE.Mesh(geometry.text.end, material.text)
-      mesh.text.end.position.set(app.camera.position.x - .28, app.camera.position.y + .1, app.camera.position.z - 1.25)
-      app.scene.add(mesh.text.end)
-    })
-  }
-
-  const tj = new TWEEN.Tween(app.camera.position).to({y: 12.5}, 175).onComplete(() =>
-    new TWEEN.Tween(app.camera.position).to({y: 10}, 2000).easing(TWEEN.Easing.Quadratic.Out).onComplete(() =>
-      player.isJumping = false).start())
-  const tsl = new TWEEN.Tween(app.camera.position).to({x: -1.25}, 250).easing(TWEEN.Easing.Quadratic.Out)
-    .onComplete(() => player.isStrafing = false)
-  const tsr = new TWEEN.Tween(app.camera.position).to({x: 1.25}, 250).easing(TWEEN.Easing.Quadratic.Out)
-    .onComplete(() => player.isStrafing = false)
-  const ts = new TWEEN.Tween(mesh.bullet.position).to({z: -20}, 5000).easing(TWEEN.Easing.Quadratic.Out)
-    .onComplete(() => {
-      player.isShooting = false
-      mesh.bullet.position.z = 7.5
-      // app.renderer.setPixelRatio(.2)
-    })
-
-  const act = a => {
-    if (app.isEnabled) {
-      switch (a) {
-        case 'jump':
-          if (!player.isJumping) {
-            player.isJumping = true
-            tj.start()
+            l.start()
           }
           break
-        case 'strafeLeft':
-          if (!player.isStrafing && app.camera.position.x >= 0) {
-            player.isStrafing = true
-            tsl.start()
-          }
-          break
-        case 'strafeRight':
-          if (!player.isStrafing && app.camera.position.x <= 0) {
-            player.isStrafing = true
-            tsr.start()
-          }
-          break
-        case 'shoot':
-          if (!player.isShooting) {
-            player.isShooting = true
-            ts.start()
-            app.renderer.setPixelRatio(.2)
+        case 'right':
+          if (this.is !== 'right') {
+            m = true
+            this.is = 'right'
+
+            r.start()
           }
           break
       }
     }
   }
 
-  window.ontouchstart = e => {
-    input.touch.start.x = e.changedTouches[0].clientX / window.innerWidth * 2 - 1
-    input.touch.start.y = e.changedTouches[0].clientY / window.innerHeight * -2 + 1
+  window.onkeydown = e => {
+    if (game.running) {
+      switch (e.code) {
+        case 'ArrowLeft': case 'KeyA': mo('left')
+          break
+        case 'ArrowRight': case 'KeyD': mo('right')
+          break
+      }
+    } else game.begin()
+  }
 
-    if (!app.isEnabled) app.start()
+  let sX, sY, eX, eY
+
+  window.ontouchstart = e => {
+    sX = e.changedTouches[0].clientX / window.innerWidth * 2 - 1
+    sY = e.changedTouches[0].clientY / window.innerHeight * -2 + 1
+
+    if (!game.running) game.begin()
   }
 
   window.ontouchend = e => {
-    input.touch.end.x = e.changedTouches[0].clientX / window.innerWidth * 2 - 1
-    input.touch.end.y = e.changedTouches[0].clientY / window.innerHeight * -2 + 1
+    eX = e.changedTouches[0].clientX / window.innerWidth * 2 - 1
+    eY = e.changedTouches[0].clientY / window.innerHeight * -2 + 1
 
-    if (Math.abs(input.touch.start.x - input.touch.end.x) < .25 &&
-      input.touch.start.y - input.touch.end.y < -.25) act('jump')
-    else if (Math.abs(input.touch.start.x - input.touch.end.x) < .25 &&
-      input.touch.start.y - input.touch.end.y > .25) act('shoot')
-    else if (Math.abs(input.touch.start.y - input.touch.end.y) < .25 &&
-      input.touch.start.x - input.touch.end.x < -.25) act('strafeLeft')
-    else if (Math.abs(input.touch.start.y - input.touch.end.y) < .25 &&
-      input.touch.start.x - input.touch.end.x > .25) act('strafeRight')
+    if (Math.abs(sY - eY) < .25 && sX - eX < -.25) mo('left')
+    else if (Math.abs(sY - eY) < .25 && sX - eX > .25) mo('right')
   }
 
   document.getElementsByTagName('canvas')[0].ontouchstart = e => e.preventDefault()
 
-  window.onkeydown = e => {
-    switch (e.code) {
-      case 'ArrowUp': case 'KeyW':
-        act('jump')
-        break
-      case 'ArrowLeft': case 'KeyA':
-        act('strafeLeft')
-        break
-      case 'ArrowRight': case 'KeyD':
-        act('strafeRight')
-        break
-      case 'ArrowDown': case 'KeyS':
-        act('shoot')
-        break
-      case 'KeyQ':
-        new TWEEN.Tween(app.camera.rotation).to({y: [30 * Math.PI / 180, 0]}, 500).start()
-        break
-      case 'KeyE':
-        new TWEEN.Tween(app.camera.rotation).to({y: [-30 * Math.PI / 180, 0]}, 500).start()
-        break
-    }
-
-    if (!app.isEnabled) {
-      if (app.restart) {
-        app.restart = false
-
-        location.reload()
-      } else app.start()
-    }
-  }
+  this.score = 0
 }
 
-function anim(t) {
-  requestAnimationFrame(anim)
+function Audio() {
+  const li = new THREE.AudioListener()
+  game.camera.add(li)
+
+  const lo = new THREE.AudioLoader()
+
+  this.s = new THREE.Audio(li)
+  lo.load('mp3/audio.mp3', b => {
+    this.s.setBuffer(b)
+    this.s.setLoop(true)
+    this.s.play()
+  })
+
+  this.analyser = new THREE.AudioAnalyser(this.s) // ? + `, 32`
+
+  // window.onblur = () => this.s.setVolume(0)
+  // window.onfocus = () => this.s.setVolume(1)
+}
+
+let game, light, geometry, material, shader, mesh, title, instructions, animation, audio, score
+
+function initialize() {
+  game = new Game()
+  light = new Light()
+  geometry = new Geometry()
+  material = new Material()
+  shader = new Shader()
+  mesh = new Mesh()
+  title = new Text(' waraws\nLUNARINE', new THREE.Vector3(-.225, 10.1, 6.25))
+  instructions = new Text('PRESSad<-->\n\n   AVOID\n DISTORTED\n   AREAS\n\nSWIPEriglef',
+    new THREE.Vector3(-.3, 10.5125, 5.75), false)
+  player = new Player()
+
+  animate()
+}
+
+function animate(t) {
+  requestAnimationFrame(animate)
 
   TWEEN.update()
 
-  app.time = t / 1000
+  game.time = t * .001
 
-  mesh.snow.position.set(app.camera.position.x - .5, app.camera.position.y - .5, app.camera.position.z - 1)
+  mesh.snow.position.set(game.camera.position.x - .5, game.camera.position.y - .5, 6.5)
 
-  // https://threejs.org/docs/index.html#api/en/audio/AudioAnalyser
-  if (app.isEnabled) {
-    audio.amplitude = map(audio.analyser.getFrequencyData()[0], 0, 255, .1, 2)
-    shader.planet.uniforms.uDistort.value = audio.amplitude
-    shader.tree.uniforms.uDistort.value = audio.amplitude
-    if (shader.enemy) shader.enemy.uniforms.uDistort.value = audio.amplitude * 1.25
-    if (shader.obstacle) shader.obstacle.uniforms.uDistort.value = audio.amplitude
-    shader.snow.uniforms.uDistort.value = audio.amplitude
-    // console.log(map(audio.analyser.data[0], 0, 255, 0, 10))
+  if (game.running) {
+    const a = map(audio.analyser.getFrequencyData()[0], 0, 255, .1, 2)
+    if (shader.distort === 'left') {
+      if (shader.groundL) shader.groundL.uniforms.uDistort.value = a * 2
+      if (shader.groundR) shader.groundR.uniforms.uDistort.value = .1
 
-    if (map(audio.analyser.data[0], 0, 255, 0, 10) > 1 && app.camera.position.y === 10) {
-      // console.log('hit bottom')
-      // app.renderer.setPixelRatio(.05)
-    }
-
-    mesh.planet.rotation.x += .0075
-    mesh.tree.rotation.x += .0075
-
-    mesh.obstacle.position.x = Math.cos(app.time * 1.75)
-    // console.log(mesh.obstacle.position.x)
-    // console.log(app.camera.position.x)
-    mesh.obstacle.position.y = app.camera.position.y + .75 + Math.sin(app.time * 1.5) * .5 // -= .0025
-    mesh.obstacle.position.z += .075
-    if (mesh.obstacle.position.z > app.camera.position.z) {
-      // mesh.obstacle.position.y = app.camera.position.y + 1
-      mesh.obstacle.position.z = app.camera.position.z - 30
-
-      if (app.camera.position.x < 0 && mesh.obstacle.position.x < 0) {
-        // console.log('hit left')
-        if (player.isWounded++) app.stop()
-        // app.renderer.setPixelRatio(.05)
+      if (player.is === 'left' && shader.groundL.uniforms.uDistort.value > .2) {
+        console.log('damage') // ! -
+        if (game.pass.shader.uniforms.uAmount.value < 1) game.pass.shader.uniforms.uAmount.value += .0025
+        else game.pass.shader.uniforms.uAmount.value = 1
+      } else if (player.is === 'right') {
+        if (game.pass.shader.uniforms.uAmount.value > .75) game.pass.shader.uniforms.uAmount.value -= .0025
+        else game.pass.shader.uniforms.uAmount.value = .75
       }
-      else if (app.camera.position.x > 0 && mesh.obstacle.position.x > 0) {
-        // console.log('hit right')
-        if (player.isWounded++) app.stop()
-        // app.renderer.setPixelRatio(.05)
+    } else {
+      if (shader.groundL) shader.groundL.uniforms.uDistort.value = .1
+      if (shader.groundR) shader.groundR.uniforms.uDistort.value = a * 2
+
+      if (player.is === 'right' && shader.groundR.uniforms.uDistort.value > .2) {
+        console.log('damage') // ! -
+        if (game.pass.shader.uniforms.uAmount.value < 1) game.pass.shader.uniforms.uAmount.value += .0025
+        else game.pass.shader.uniforms.uAmount.value = 1
+      } else if (player.is === 'left') {
+        if (game.pass.shader.uniforms.uAmount.value > .75) game.pass.shader.uniforms.uAmount.value -= .0025
+        else game.pass.shader.uniforms.uAmount.value = .75
       }
     }
+    if (shader.tree) shader.tree.uniforms.uDistort.value = a
+    if (shader.enemy) shader.enemy.uniforms.uDistort.value = a * 1.25
+    if (shader.snow) shader.snow.uniforms.uDistort.value = a
 
-    mesh.enemy.rotation.y = app.time
-
-    mesh.bullet.position.x = app.camera.position.x - .5 + Math.cos(app.time * 1.75)
-    mesh.bullet.position.y = app.camera.position.y + .75 + Math.sin(app.time * 1.5) * .5 // -= .0025
-
-    if ((mesh.bullet.position.z < 7.5 && mesh.bullet.position.z > -10) &&
-      (Math.abs(mesh.bullet.position.z - mesh.obstacle.position.z) < 1) &&
-      ((mesh.bullet.position.x < 0 && mesh.obstacle.position.x < 0) ||
-      (mesh.bullet.position.x > 0 && mesh.obstacle.position.x > 0))) console.log('nullify')
-
-    player.score = app.time
+    if (player.is !== 'center') player.score += .01 // ? +- `+= .01`
   }
 
-  // mesh.snow.rotation.x = Math.sin(app.time) / 2
+  shader.uTime.forEach(u => u.value = game.time)
 
-  Object.keys(shader).forEach(k => {
-    if (shader[k]) shader[k].uniforms.uTime.value = app.time
-  })
-
-  app.pass.shaderMaterial.uniforms.uTime.value = app.time
-  app.composer.render()
+  game.pass.shader.uniforms.uTime.value = game.time
+  game.composer.render()
 }
