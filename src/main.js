@@ -406,7 +406,6 @@ function draw(t) {
     const amplitude = mapNumber(audio.analyser.getFrequencyData()[0], 0, 255, .1, 2)
     if (mesh.octahedron.position.x === -1.5) {
       if (shader.sphereLeft) shader.sphereLeft.uniforms.uDistort.value = amplitude * 2
-      if (shader.sphereRight) shader.sphereRight.uniforms.uDistort.value = .1
 
       if (game.camera.position.x === -1.5 && shader.sphereLeft.uniforms.uDistort.value > .2) {
         console.log(`damage`) // ! -
@@ -417,7 +416,6 @@ function draw(t) {
         else game.pass.shader.uniforms.uAmount.value = .75
       }
     } else if (mesh.octahedron.position.x === 1.5) {
-      if (shader.sphereLeft) shader.sphereLeft.uniforms.uDistort.value = .1
       if (shader.sphereRight) shader.sphereRight.uniforms.uDistort.value = amplitude * 2
 
       if (game.camera.position.x === 1.5 && shader.sphereRight.uniforms.uDistort.value > .2) {
@@ -427,6 +425,15 @@ function draw(t) {
       } else if (game.camera.position.x === -1.5) {
         if (game.pass.shader.uniforms.uAmount.value > .75) game.pass.shader.uniforms.uAmount.value -= .0025
         else game.pass.shader.uniforms.uAmount.value = .75
+      }
+    } else {
+      if (shader.sphereLeft) {
+        if (shader.sphereLeft.uniforms.uDistort.value > .1) shader.sphereLeft.uniforms.uDistort.value -= .01
+        else shader.sphereLeft.uniforms.uDistort.value = .1
+      }
+      if (shader.sphereRight) {
+        if (shader.sphereRight.uniforms.uDistort.value > .1) shader.sphereRight.uniforms.uDistort.value -= .01
+        else shader.sphereRight.uniforms.uDistort.value = .1
       }
     }
     if (shader.cylinder) shader.cylinder.uniforms.uDistort.value = amplitude
