@@ -96,8 +96,8 @@ function Game() {
     this.scene.remove(mesh.octahedron)
     new THREE.FontLoader().load(`json/VT323_Regular.json`, f => {
       const textScore = new THREE.Mesh(new THREE.TextBufferGeometry(
-        `SCORE:${(`00000` + Math.round(player.score)).slice(-5)}`, {font: f, size: .1, height: .01}), material.text)
-      textScore.position.set(-.3, 10.1, 6.25)
+        `SCORE\n${(`00000` + Math.round(player.score)).slice(-5)}`, {font: f, size: .1, height: .01}), material.text)
+      textScore.position.set(-.1375, 10.1, 6.25)
       game.scene.add(textScore)
     })
   }
