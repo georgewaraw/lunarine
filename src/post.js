@@ -80,3 +80,8 @@ THREE.Post.prototype = Object.assign(Object.create(THREE.Pass.prototype), {
     this.textureOld.setSize(width, height)
   }
 })
+
+// Based on:
+//   AfterimagePass and AfterimageShader by HypnosNova
+//   FilmShader by alteredq
+//   TechnicolorShader by flimshaw
