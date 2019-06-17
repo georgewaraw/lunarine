@@ -6,4 +6,4 @@ the player moves left or right to avoid areas of the screen that are distorted b
 The area to be distorted is indicated by the floating shape's movements.
 
 #### Controls:
-On desktop, move left or right with A, D or arrow keys. On mobile, swipe left or right.
+On desktop, move left or right with A, D, or arrow keys. On mobile, swipe left or right.
