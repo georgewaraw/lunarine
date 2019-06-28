@@ -72,14 +72,14 @@ function Game() {
 
     new TWEEN.Tween(mesh.octahedron.position).to({y: [12, 13, 12.5]}, 10000).repeat(Infinity).start()
 
-    const moveLeft = new TWEEN.Tween(mesh.octahedron.position).to({x: -1.5}, 2500).easing(TWEEN.Easing.Quadratic.In)
-    const moveRight = new TWEEN.Tween(mesh.octahedron.position).to({x: 1.5}, 2500).easing(TWEEN.Easing.Quadratic.In)
+    const moveLeft = new TWEEN.Tween(mesh.octahedron.position).to({x: -1.5}, 500).easing(TWEEN.Easing.Quadratic.In)
+    const moveRight = new TWEEN.Tween(mesh.octahedron.position).to({x: 1.5}, 500).easing(TWEEN.Easing.Quadratic.In)
     setInterval(() => {
       if (getNumber(0, 2)) {
         if (mesh.octahedron.position.x === 1.5) moveLeft.start()
         else if (mesh.octahedron.position.x === -1.5) moveRight.start()
       }
-    }, 2500)
+    }, 1500)
   }
 
   this.stop = () => {
@@ -408,7 +408,6 @@ function draw(t) {
       if (shader.sphereLeft) shader.sphereLeft.uniforms.uDistort.value = amplitude * 2
 
       if (game.camera.position.x === -1.5 && shader.sphereLeft.uniforms.uDistort.value > .2) {
-        console.log(`damage`) // ! -
         if (game.pass.shader.uniforms.uAmount.value < 1) game.pass.shader.uniforms.uAmount.value += .0025
         else game.stop()
       } else if (game.camera.position.x === 1.5) {
@@ -419,7 +418,6 @@ function draw(t) {
       if (shader.sphereRight) shader.sphereRight.uniforms.uDistort.value = amplitude * 2
 
       if (game.camera.position.x === 1.5 && shader.sphereRight.uniforms.uDistort.value > .2) {
-        console.log(`damage`) // ! -
         if (game.pass.shader.uniforms.uAmount.value < 1) game.pass.shader.uniforms.uAmount.value += .0025
         else game.stop()
       } else if (game.camera.position.x === -1.5) {
@@ -427,14 +425,8 @@ function draw(t) {
         else game.pass.shader.uniforms.uAmount.value = .75
       }
     } else {
-      if (shader.sphereLeft) {
-        if (shader.sphereLeft.uniforms.uDistort.value > .1) shader.sphereLeft.uniforms.uDistort.value -= .01
-        else shader.sphereLeft.uniforms.uDistort.value = .1
-      }
-      if (shader.sphereRight) {
-        if (shader.sphereRight.uniforms.uDistort.value > .1) shader.sphereRight.uniforms.uDistort.value -= .01
-        else shader.sphereRight.uniforms.uDistort.value = .1
-      }
+      if (shader.sphereLeft && shader.sphereLeft.uniforms.uDistort.value > .1) shader.sphereLeft.uniforms.uDistort.value = .1
+      if (shader.sphereRight && shader.sphereRight.uniforms.uDistort.value > .1) shader.sphereRight.uniforms.uDistort.value = .1
     }
     if (shader.cylinder) shader.cylinder.uniforms.uDistort.value = amplitude
     if (shader.octahedron) shader.octahedron.uniforms.uDistort.value = amplitude * 1.25

@@ -81,7 +81,7 @@ THREE.Post.prototype = Object.assign(Object.create(THREE.Pass.prototype), {
   }
 })
 
-// Based on:
+// based on:
 //   AfterimagePass and AfterimageShader by HypnosNova
 //   FilmShader by alteredq
 //   TechnicolorShader by flimshaw
