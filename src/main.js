@@ -425,8 +425,10 @@ function draw(t) {
         else game.pass.shader.uniforms.uAmount.value = .75
       }
     } else {
-      if (shader.sphereLeft && shader.sphereLeft.uniforms.uDistort.value > .1) shader.sphereLeft.uniforms.uDistort.value = .1
-      if (shader.sphereRight && shader.sphereRight.uniforms.uDistort.value > .1) shader.sphereRight.uniforms.uDistort.value = .1
+      if (shader.sphereLeft && shader.sphereLeft.uniforms.uDistort.value > .1)
+        shader.sphereLeft.uniforms.uDistort.value = .1
+      if (shader.sphereRight && shader.sphereRight.uniforms.uDistort.value > .1)
+        shader.sphereRight.uniforms.uDistort.value = .1
     }
     if (shader.cylinder) shader.cylinder.uniforms.uDistort.value = amplitude
     if (shader.octahedron) shader.octahedron.uniforms.uDistort.value = amplitude * 1.25
