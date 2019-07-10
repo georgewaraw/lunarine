@@ -364,7 +364,7 @@ function Audio() {
     audio.play()
   })
 
-  this.analyser = new THREE.AudioAnalyser(audio) // ? + `, 32`
+  this.analyser = new THREE.AudioAnalyser(audio)
 
   window.onblur = () => audio.setVolume(0)
   window.onfocus = () => audio.setVolume(1)
@@ -403,25 +403,25 @@ function draw(t) {
     mesh.cylinder.rotation.x = time / 2
     mesh.octahedron.rotation.y = time / 2
 
-    const amplitude = mapNumber(audio.analyser.getFrequencyData()[0], 0, 255, .1, 2)
+    const amplitude = mapNumber(audio.analyser.getAverageFrequency(), 63, 255, .1, 3)
     if (mesh.octahedron.position.x === -1.5) {
       if (shader.sphereLeft) shader.sphereLeft.uniforms.uDistort.value = amplitude * 2
 
       if (game.camera.position.x === -1.5 && shader.sphereLeft.uniforms.uDistort.value > .2) {
-        if (game.pass.shader.uniforms.uAmount.value < 1) game.pass.shader.uniforms.uAmount.value += .0025
+        if (game.pass.shader.uniforms.uAmount.value < 1) game.pass.shader.uniforms.uAmount.value += .005
         else game.stop()
       } else if (game.camera.position.x === 1.5) {
-        if (game.pass.shader.uniforms.uAmount.value > .75) game.pass.shader.uniforms.uAmount.value -= .0025
+        if (game.pass.shader.uniforms.uAmount.value > .75) game.pass.shader.uniforms.uAmount.value -= .005
         else game.pass.shader.uniforms.uAmount.value = .75
       }
     } else if (mesh.octahedron.position.x === 1.5) {
       if (shader.sphereRight) shader.sphereRight.uniforms.uDistort.value = amplitude * 2
 
       if (game.camera.position.x === 1.5 && shader.sphereRight.uniforms.uDistort.value > .2) {
-        if (game.pass.shader.uniforms.uAmount.value < 1) game.pass.shader.uniforms.uAmount.value += .0025
+        if (game.pass.shader.uniforms.uAmount.value < 1) game.pass.shader.uniforms.uAmount.value += .005
         else game.stop()
       } else if (game.camera.position.x === -1.5) {
-        if (game.pass.shader.uniforms.uAmount.value > .75) game.pass.shader.uniforms.uAmount.value -= .0025
+        if (game.pass.shader.uniforms.uAmount.value > .75) game.pass.shader.uniforms.uAmount.value -= .005
         else game.pass.shader.uniforms.uAmount.value = .75
       }
     } else {
@@ -434,7 +434,7 @@ function draw(t) {
     if (shader.octahedron) shader.octahedron.uniforms.uDistort.value = amplitude * 1.25
     if (shader.points) shader.points.uniforms.uDistort.value = amplitude
 
-    if (game.camera.position.x !== 0) player.score += .01 // ? +- `.01`
+    if (game.camera.position.x !== 0) player.score += .05
   }
 
   if (shader.sphereLeft) shader.sphereLeft.uniforms.uTime.value = time

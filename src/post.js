@@ -4,13 +4,13 @@ THREE.Post = function() {
   this.textureComp = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {
     minFilter: THREE.LinearFilter,
     magFilter: THREE.NearestFilter,
-    format: THREE.RGBAFormat,
+    format: THREE.RGBAFormat
   })
 
   this.textureOld = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {
     minFilter: THREE.LinearFilter,
     magFilter: THREE.NearestFilter,
-    format: THREE.RGBAFormat,
+    format: THREE.RGBAFormat
   })
 
   this.shader = new THREE.ShaderMaterial({
@@ -18,7 +18,7 @@ THREE.Post = function() {
       tOld: {value: null},
       tNew: {value: null},
       uAmount: {value: .75},
-      uTime: {value: 0},
+      uTime: {value: 0}
     },
     vertexShader: `
       varying vec2 vUv;
@@ -43,7 +43,7 @@ THREE.Post = function() {
         vec4 c = vec4(b.r, (b.g + b.b) * .5, (b.g + b.b) * .5, 1.);
         gl_FragColor = c;
       }
-    `,
+    `
   })
 
   this.compFsQuad = new THREE.Pass.FullScreenQuad(this.shader)
