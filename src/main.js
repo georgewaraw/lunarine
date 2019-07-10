@@ -79,7 +79,7 @@ function Game() {
         if (mesh.octahedron.position.x === 1.5) moveLeft.start()
         else if (mesh.octahedron.position.x === -1.5) moveRight.start()
       }
-    }, 1500)
+    }, 1000)
   }
 
   this.stop = () => {
@@ -408,7 +408,11 @@ function draw(t) {
       if (shader.sphereLeft) shader.sphereLeft.uniforms.uDistort.value = amplitude * 2
 
       if (game.camera.position.x === -1.5 && shader.sphereLeft.uniforms.uDistort.value > .2) {
-        if (game.pass.shader.uniforms.uAmount.value < 1) game.pass.shader.uniforms.uAmount.value += .005
+        if (game.pass.shader.uniforms.uAmount.value < 1) {
+          game.pass.shader.uniforms.uAmount.value += .005
+
+          player.score += .5
+        }
         else game.stop()
       } else if (game.camera.position.x === 1.5) {
         if (game.pass.shader.uniforms.uAmount.value > .75) game.pass.shader.uniforms.uAmount.value -= .005
@@ -418,7 +422,11 @@ function draw(t) {
       if (shader.sphereRight) shader.sphereRight.uniforms.uDistort.value = amplitude * 2
 
       if (game.camera.position.x === 1.5 && shader.sphereRight.uniforms.uDistort.value > .2) {
-        if (game.pass.shader.uniforms.uAmount.value < 1) game.pass.shader.uniforms.uAmount.value += .005
+        if (game.pass.shader.uniforms.uAmount.value < 1) {
+          game.pass.shader.uniforms.uAmount.value += .005
+
+          player.score += .5
+        }
         else game.stop()
       } else if (game.camera.position.x === -1.5) {
         if (game.pass.shader.uniforms.uAmount.value > .75) game.pass.shader.uniforms.uAmount.value -= .005
@@ -433,8 +441,6 @@ function draw(t) {
     if (shader.cylinder) shader.cylinder.uniforms.uDistort.value = amplitude
     if (shader.octahedron) shader.octahedron.uniforms.uDistort.value = amplitude * 1.25
     if (shader.points) shader.points.uniforms.uDistort.value = amplitude
-
-    if (game.camera.position.x !== 0) player.score += .05
   }
 
   if (shader.sphereLeft) shader.sphereLeft.uniforms.uTime.value = time
