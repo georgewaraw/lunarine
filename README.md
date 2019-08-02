@@ -1,5 +1,5 @@
 ## Lunarine
-is a small WebGL demo made using [Three.js](https://github.com/mrdoob/three.js) and [Tween.js](https://github.com/tweenjs/tween.js).
+is a small WebGL demo made using [three.js](https://github.com/mrdoob/three.js) and [es6-tween](https://github.com/tweenjs/es6-tween).
 It works on desktop and mobile with PWA support for iOS.
 The gameplay concept is a merging of an endless runner with a rhythm game:
 the player moves left or right to enter or exit the areas of the screen that are distorted by the music.
