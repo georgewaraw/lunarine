@@ -1,0 +1,7 @@
+{
+  "author": "George Waraw",
+  "dependencies": {
+    "es6-tween": "^5.5.10",
+    "three": "^0.106.2"
+  }
+}
