@@ -1,7 +1,16 @@
 import * as THREE from 'three'
 import helper from 'helper'
 
-const mat = { sphereLeft: null, sphereRight: null, cylinder: null, octahedron: null, points: null, text: null }
+const mat = {
+
+  sphereLeft: null,
+  sphereRight: null,
+  cylinder: null,
+  octahedron: null,
+  points: null,
+  text: null
+
+}
 
 const color = helper.color( 'light' )
 

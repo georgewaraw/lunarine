@@ -1,6 +1,15 @@
 import mat from 'mat'
 
-const shader = { sphereLeft: null, sphereRight: null, cylinder: null, octahedron: null, points: null, text: null }
+const shader = {
+
+  sphereLeft: null,
+  sphereRight: null,
+  cylinder: null,
+  octahedron: null,
+  points: null,
+  text: null
+
+}
 
 const uniforms = `
 

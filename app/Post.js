@@ -117,4 +117,8 @@ Post.prototype = Object.assign( Object.create( Pass.prototype ), {
 
 } )
 
-// based on AfterimagePass and AfterimageShader by HypnosNova, FilmShader by alteredq, TechnicolorShader by flimshaw
+// based on:
+// 	 AfterimagePass HypnosNova
+//   AfterimageShader by HypnosNova
+//   FilmShader by alteredq
+//   TechnicolorShader by flimshaw

@@ -1,7 +1,15 @@
 import * as THREE from 'three'
 import helper from 'helper'
 
-const geo = { sphereLeft: null, sphereRight: null, cylinder: null, octahedron: null, points: null }
+const geo = {
+
+  sphereLeft: null,
+  sphereRight: null,
+  cylinder: null,
+  octahedron: null,
+  points: null
+
+}
 
 const colorDark = new THREE.Color( helper.color( 'dark' ) )
 const colorLight = new THREE.Color( helper.color( 'light' ) )

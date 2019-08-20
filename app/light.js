@@ -1,11 +1,10 @@
 import * as THREE from 'three'
 import app from 'app'
 
-const ambient = new THREE.AmbientLight( app.color, .5 )
-app.scene.add( ambient )
+app.scene.add( new THREE.AmbientLight( app.color, .5 ) )
 
-const point = new THREE.PointLight( app.color, .5, 100 )
-point.shadow.mapSize = new THREE.Vector2( 512, 512 )
-point.castShadow = true
-point.position.set( 5, 15, 10 )
-app.scene.add( point )
+const light = new THREE.PointLight( app.color, .5, 100 )
+light.shadow.mapSize = new THREE.Vector2( 512, 512 )
+light.castShadow = true
+light.position.set( 5, 15, 10 )
+app.scene.add( light )

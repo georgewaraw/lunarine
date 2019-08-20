@@ -1,16 +1,14 @@
 import TWEEN from 'es6-tween'
-import mesh from 'mesh'
 import app from 'app'
 import helper from 'helper'
+import mesh from 'mesh'
 import shader from 'shader'
 
-( function draw( t ) {
+app.renderer.setAnimationLoop( time => {
 
-  requestAnimationFrame( draw )
+  time /= 1000
 
   TWEEN.update()
-
-  const time = t / 1000
 
   mesh.points.position.set( app.camera.position.x - .5, app.camera.position.y - .5, 6.5 )
 
@@ -22,6 +20,7 @@ import shader from 'shader'
     mesh.octahedron.rotation.y = time / 2
 
     const amplitude = helper.map( app.audio.analyser.getAverageFrequency(), 63, 255, .1, 3 )
+
     if ( mesh.octahedron.position.x === -1.5 ) {
 
       if ( shader.sphereLeft ) shader.sphereLeft.uniforms.uDistort.value = amplitude * 2
@@ -34,8 +33,7 @@ import shader from 'shader'
 
           app.score += .5
 
-        }
-        else app.stop()
+        } else app.stop()
 
       } else if ( app.camera.position.x === 1.5 ) {
 
@@ -56,8 +54,7 @@ import shader from 'shader'
 
           app.score += .5
 
-        }
-        else app.stop()
+        } else app.stop()
 
       } else if ( app.camera.position.x === -1.5 ) {
 
@@ -74,6 +71,7 @@ import shader from 'shader'
         shader.sphereRight.uniforms.uDistort.value = .1
 
     }
+
     if ( shader.cylinder ) shader.cylinder.uniforms.uDistort.value = amplitude
     if ( shader.octahedron ) shader.octahedron.uniforms.uDistort.value = amplitude * 1.25
     if ( shader.points ) shader.points.uniforms.uDistort.value = amplitude
@@ -88,6 +86,7 @@ import shader from 'shader'
   if ( shader.text ) shader.text.uniforms.uTime.value = time
 
   app.post.shader.uniforms.uTime.value = time
+
   app.composer.render()
 
-} )()
+} )

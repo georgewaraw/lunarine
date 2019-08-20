@@ -1,11 +1,17 @@
-const helper = { random: null, map: null, color: null }
+const helper = {
+
+  random: null,
+  map: null,
+  color: null
+
+}
 
 helper.random = ( from, to ) => Math.floor( Math.random() * ( to - from ) + from )
 
 helper.map = ( input, inputFrom, inputTo, outputFrom, outputTo ) =>
   ( input - inputFrom ) * ( outputTo - outputFrom ) / ( inputTo - inputFrom ) + outputFrom
 
-helper.color = ( brightness ) => {
+helper.color = brightness => {
 
   let luminance = 40
 
